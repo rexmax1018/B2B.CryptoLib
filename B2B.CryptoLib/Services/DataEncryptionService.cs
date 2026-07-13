@@ -1,8 +1,13 @@
-﻿using System;
+using System;
+using System.Security.Cryptography;
 using System.Text;
 using B2B.CryptoLib.Enums;
 using B2B.CryptoLib.Interfaces;
 using B2B.CryptoLib.Models;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Engines;
+using Org.BouncyCastle.Crypto.Modes;
+using Org.BouncyCastle.Crypto.Parameters;
 
 namespace B2B.CryptoLib.Services
 {
@@ -11,7 +16,16 @@ namespace B2B.CryptoLib.Services
     /// </summary>
     public class DataEncryptionService : IDataEncryptionService
     {
-        private readonly ICryptoService _cryptoService; private readonly KeyManagerService _keyManagerService;
+        // The outer value remains "Base64(payload).unifiedName". This marker only
+        // exists inside the Base64 payload so old callers keep the same contract.
+        private static readonly byte[] GcmMagic = Encoding.ASCII.GetBytes("B2BCGCM");
+        private const byte GcmPayloadVersion = 2;
+        private const int GcmNonceLength = 12;
+        private const int GcmTagLengthBits = 128;
+        private const int GcmTagLengthBytes = GcmTagLengthBits / 8;
+
+        private readonly ICryptoService _cryptoService;
+        private readonly KeyManagerService _keyManagerService;
 
         public DataEncryptionService(ICryptoService cryptoService, KeyManagerService keyManagerService)
         {
@@ -31,7 +45,7 @@ namespace B2B.CryptoLib.Services
                 throw new ArgumentException("unifiedName 必須提供且不可包含點號。", nameof(unifiedName));
 
             var key = _keyManagerService.GetAesKey(unifiedName);
-            var encrypted = _cryptoService.Encrypt(Encoding.UTF8.GetBytes(plainText), CryptoAlgorithmType.AES, key);
+            var encrypted = EncryptGcm(Encoding.UTF8.GetBytes(plainText), key, unifiedName);
 
             return Convert.ToBase64String(encrypted) + "." + unifiedName;
         }
@@ -48,8 +62,11 @@ namespace B2B.CryptoLib.Services
             var separator = encryptedDataWithUnifiedName.LastIndexOf('.');
             var encrypted = Convert.FromBase64String(encryptedDataWithUnifiedName.Substring(0, separator));
             var key = _keyManagerService.GetAesKey(unifiedName);
+            var plain = HasGcmMagic(encrypted)
+                ? DecryptGcm(encrypted, key, unifiedName)
+                : _cryptoService.Decrypt(encrypted, CryptoAlgorithmType.AES, key);
 
-            return Encoding.UTF8.GetString(_cryptoService.Decrypt(encrypted, CryptoAlgorithmType.AES, key));
+            return Encoding.UTF8.GetString(plain);
         }
 
         /// <summary>
@@ -91,6 +108,89 @@ namespace B2B.CryptoLib.Services
             {
                 return false;
             }
+        }
+
+        private static byte[] EncryptGcm(byte[] plain, SymmetricKeyModel key, string unifiedName)
+        {
+            ValidateGcmKey(key);
+
+            var nonce = new byte[GcmNonceLength];
+
+            using (var random = new RNGCryptoServiceProvider())
+                random.GetBytes(nonce);
+
+            var cipher = new GcmBlockCipher(new AesEngine());
+            cipher.Init(true, new AeadParameters(new KeyParameter(key.Key), GcmTagLengthBits, nonce, Encoding.UTF8.GetBytes(unifiedName)));
+
+            var cipherTextAndTag = new byte[cipher.GetOutputSize(plain.Length)];
+            var length = cipher.ProcessBytes(plain, 0, plain.Length, cipherTextAndTag, 0);
+            length += cipher.DoFinal(cipherTextAndTag, length);
+
+            var payload = new byte[GcmMagic.Length + 1 + nonce.Length + length];
+            Buffer.BlockCopy(GcmMagic, 0, payload, 0, GcmMagic.Length);
+            payload[GcmMagic.Length] = GcmPayloadVersion;
+            Buffer.BlockCopy(nonce, 0, payload, GcmMagic.Length + 1, nonce.Length);
+            Buffer.BlockCopy(cipherTextAndTag, 0, payload, GcmMagic.Length + 1 + nonce.Length, length);
+
+            return payload;
+        }
+
+        private static byte[] DecryptGcm(byte[] payload, SymmetricKeyModel key, string unifiedName)
+        {
+            ValidateGcmKey(key);
+
+            var headerLength = GcmMagic.Length + 1;
+
+            if (payload[GcmMagic.Length] != GcmPayloadVersion)
+                throw new CryptographicException("不支援的加密資料版本。");
+
+            if (payload.Length < headerLength + GcmNonceLength + GcmTagLengthBytes)
+                throw new CryptographicException("加密資料格式不正確。");
+
+            var nonce = new byte[GcmNonceLength];
+            Buffer.BlockCopy(payload, headerLength, nonce, 0, nonce.Length);
+
+            var cipherTextOffset = headerLength + nonce.Length;
+            var cipherTextLength = payload.Length - cipherTextOffset;
+            var cipher = new GcmBlockCipher(new AesEngine());
+            cipher.Init(false, new AeadParameters(new KeyParameter(key.Key), GcmTagLengthBits, nonce, Encoding.UTF8.GetBytes(unifiedName)));
+
+            var plain = new byte[cipher.GetOutputSize(cipherTextLength)];
+
+            try
+            {
+                var length = cipher.ProcessBytes(payload, cipherTextOffset, cipherTextLength, plain, 0);
+                length += cipher.DoFinal(plain, length);
+
+                if (length == plain.Length)
+                    return plain;
+
+                var result = new byte[length];
+                Buffer.BlockCopy(plain, 0, result, 0, length);
+                return result;
+            }
+            catch (InvalidCipherTextException ex)
+            {
+                throw new CryptographicException("加密資料驗證失敗。", ex);
+            }
+        }
+
+        private static bool HasGcmMagic(byte[] payload)
+        {
+            if (payload == null || payload.Length < GcmMagic.Length + 1)
+                return false;
+
+            for (var i = 0; i < GcmMagic.Length; i++)
+                if (payload[i] != GcmMagic[i])
+                    return false;
+
+            return true;
+        }
+
+        private static void ValidateGcmKey(SymmetricKeyModel key)
+        {
+            if (key == null || key.Key == null || (key.Key.Length != 16 && key.Key.Length != 24 && key.Key.Length != 32))
+                throw new CryptographicException("AES 金鑰長度必須為 128、192 或 256 位元。");
         }
     }
 }

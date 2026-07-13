@@ -1,7 +1,9 @@
 using Autofac;
+using B2B.CryptoLib.Interfaces;
 using B2B.CryptoLib.KeyGeneration.Factories;
 using B2B.CryptoLib.KeyGeneration.Interfaces;
 using B2B.CryptoLib.KeyGeneration.Services;
+using B2B.CryptoLib.Services;
 
 namespace B2B.CryptoLib.KeyGeneration
 {
@@ -15,6 +17,10 @@ namespace B2B.CryptoLib.KeyGeneration
             builder.RegisterType<KeyGeneratorFactory>().As<IKeyGeneratorFactory>().SingleInstance();
 
             builder.RegisterType<KeyGenerationService>().As<IKeyGenerationService>().SingleInstance();
+
+            builder.RegisterType<CryptoService>().As<ICryptoService>().SingleInstance();
+
+            builder.RegisterType<KeySetGenerationService>().As<IKeySetGenerationService>().SingleInstance();
         }
     }
 }

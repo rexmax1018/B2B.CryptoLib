@@ -14,7 +14,7 @@ namespace B2B.CryptoLib.KeyGenTool
         {
             if (args.Length < 1 || args.Length > 2)
             {
-                Console.Error.WriteLine("Usage: B2B.CryptoLib.KeyGenTool.exe <AES|RSA|ECC> [fileName]");
+                Console.Error.WriteLine("Usage: B2B.CryptoLib.KeyGenTool.exe <AES|RSA|ECC|KEYSET> [fileName]");
 
                 return 1;
             }
@@ -29,8 +29,7 @@ namespace B2B.CryptoLib.KeyGenTool
 
                 using (var container = builder.Build())
                 {
-                    var service = container.Resolve<IKeyGenerationService>();
-                    var result = Generate(service, args[0], args.Length == 2 ? args[1] : null);
+                    var result = Generate(container, args[0], args.Length == 2 ? args[1] : null);
 
                     Console.WriteLine(result);
                 }
@@ -45,21 +44,24 @@ namespace B2B.CryptoLib.KeyGenTool
             }
         }
 
-        private static object Generate(IKeyGenerationService service, string algorithm, string fileName)
+        private static object Generate(IContainer container, string algorithm, string fileName)
         {
             switch (algorithm.ToUpperInvariant())
             {
                 case "AES":
-                    return service.GenerateAndSaveKey<SymmetricKeyModel>(CryptoAlgorithmType.AES, fileName);
+                    return container.Resolve<IKeyGenerationService>().GenerateAndSaveKey<SymmetricKeyModel>(CryptoAlgorithmType.AES, fileName);
 
                 case "RSA":
-                    return service.GenerateAndSaveKey<RsaKeyModel>(CryptoAlgorithmType.RSA, fileName);
+                    return container.Resolve<IKeyGenerationService>().GenerateAndSaveKey<RsaKeyModel>(CryptoAlgorithmType.RSA, fileName);
 
                 case "ECC":
-                    return service.GenerateAndSaveKey<EccKeyModel>(CryptoAlgorithmType.ECC, fileName);
+                    return container.Resolve<IKeyGenerationService>().GenerateAndSaveKey<EccKeyModel>(CryptoAlgorithmType.ECC, fileName);
+
+                case "KEYSET":
+                    return container.Resolve<IKeySetGenerationService>().GenerateAndSave(fileName);
 
                 default:
-                    throw new ArgumentException("演算法必須為 AES、RSA 或 ECC。", nameof(algorithm));
+                    throw new ArgumentException("演算法必須為 AES、RSA、ECC 或 KEYSET。", nameof(algorithm));
             }
         }
     }

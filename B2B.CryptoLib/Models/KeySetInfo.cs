@@ -32,6 +32,14 @@ namespace B2B.CryptoLib.Models
             get; set;
         }
 
+        /// <summary>
+        /// 指出 .der 金鑰組是否採用舊版 PKCS#1 v1.5 與句點分隔的 AES 內容格式。
+        /// </summary>
+        public bool UsesLegacyMaterial
+        {
+            get; set;
+        }
+
         public string[] GetAllPaths() => new[] { AesPath, RsaPublicKeyPath, RsaPrivateKeyPath };
     }
 }
