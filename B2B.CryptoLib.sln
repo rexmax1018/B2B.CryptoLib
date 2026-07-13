@@ -1,0 +1,36 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "B2B.CryptoLib", "B2B.CryptoLib\B2B.CryptoLib.csproj", "{D82259A7-EA3A-4C65-BB91-354E0D0C10F7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "B2B.CryptoLib.Tests", "B2B.CryptoLib.Tests\B2B.CryptoLib.Tests.csproj", "{864EA49D-6E2D-4B84-8A9D-27B1D04E449A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "B2B.CryptoLib.KeyGeneration", "B2B.CryptoLib.KeyGeneration\B2B.CryptoLib.KeyGeneration.csproj", "{4A5D2E70-4DC2-42DE-BD7E-19A56CD2F107}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "B2B.CryptoLib.KeyGenTool", "B2B.CryptoLib.KeyGenTool\B2B.CryptoLib.KeyGenTool.csproj", "{0D188CDE-9A9C-4FF7-847E-91EF8EC2A908}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D82259A7-EA3A-4C65-BB91-354E0D0C10F7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D82259A7-EA3A-4C65-BB91-354E0D0C10F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D82259A7-EA3A-4C65-BB91-354E0D0C10F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D82259A7-EA3A-4C65-BB91-354E0D0C10F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{864EA49D-6E2D-4B84-8A9D-27B1D04E449A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{864EA49D-6E2D-4B84-8A9D-27B1D04E449A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{864EA49D-6E2D-4B84-8A9D-27B1D04E449A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{864EA49D-6E2D-4B84-8A9D-27B1D04E449A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4A5D2E70-4DC2-42DE-BD7E-19A56CD2F107}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4A5D2E70-4DC2-42DE-BD7E-19A56CD2F107}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4A5D2E70-4DC2-42DE-BD7E-19A56CD2F107}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4A5D2E70-4DC2-42DE-BD7E-19A56CD2F107}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D188CDE-9A9C-4FF7-847E-91EF8EC2A908}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D188CDE-9A9C-4FF7-847E-91EF8EC2A908}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D188CDE-9A9C-4FF7-847E-91EF8EC2A908}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D188CDE-9A9C-4FF7-847E-91EF8EC2A908}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
