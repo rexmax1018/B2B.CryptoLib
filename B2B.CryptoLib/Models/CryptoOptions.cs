@@ -37,7 +37,7 @@ namespace B2B.CryptoLib.Models
 
             var root = Path.GetPathRoot(normalizedPath);
 
-            if (!string.Equals(normalizedPath, root, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(normalizedPath, root, PathSecurityHelper.PathComparison))
                 normalizedPath = normalizedPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
             if (ActiveUnifiedName is not null && !PathSecurityHelper.IsSafeUnifiedName(ActiveUnifiedName))
@@ -52,7 +52,7 @@ namespace B2B.CryptoLib.Models
 
         internal static bool AreEquivalent(CryptoOptions left, CryptoOptions right)
         {
-            return string.Equals(left.KeyManagerBasePath, right.KeyManagerBasePath, StringComparison.OrdinalIgnoreCase)
+            return string.Equals(left.KeyManagerBasePath, right.KeyManagerBasePath, PathSecurityHelper.PathComparison)
                 && string.Equals(left.ActiveUnifiedName, right.ActiveUnifiedName, StringComparison.Ordinal);
         }
     }

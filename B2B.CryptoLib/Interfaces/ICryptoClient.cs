@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+
 namespace B2B.CryptoLib.Interfaces
 {
     /// <summary>
@@ -11,12 +13,15 @@ namespace B2B.CryptoLib.Interfaces
 
         string? Decrypt(string? encryptedDataWithUnifiedName);
 
-        bool IsEncrypted(string? data);
-
+        /// <summary>
+        /// 僅驗證外層格式是否可解析；不代表資料已通過 authentication 或可使用目前金鑰解密。
+        /// </summary>
         bool IsValidEncryptedFormat(string? data);
 
         string? GetUnifiedName(string? encryptedDataWithUnifiedName);
 
         string? GetUnifiedNameFromEncryptedData(string? encryptedDataWithUnifiedName);
+
+        Task UpdateKeySetsAsync();
     }
 }

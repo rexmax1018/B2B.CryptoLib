@@ -36,7 +36,7 @@ namespace B2B.CryptoLib
 
             builder.RegisterType<DataEncryptionService>().AsSelf().As<IDataEncryptionService>().SingleInstance();
 
-            builder.Register(c => new CryptoClient(c.Resolve<IDataEncryptionService>(), _activeUnifiedName))
+            builder.Register(c => new CryptoClient(c.Resolve<IDataEncryptionService>(), c.Resolve<KeyManagerService>(), _activeUnifiedName))
                 .AsSelf()
                 .As<ICryptoClient>()
                 .SingleInstance();

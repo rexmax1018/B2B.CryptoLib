@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using B2B.CryptoLib.Interfaces;
 using B2B.CryptoLib.Models;
 using B2B.CryptoLib.Services;
@@ -11,6 +12,7 @@ namespace B2B.CryptoLib
     public sealed class CryptoClient : ICryptoClient
     {
         private readonly IDataEncryptionService _dataEncryptionService;
+        private readonly KeyManagerService? _keyManagerService;
         private readonly string? _activeUnifiedName;
 
         /// <summary>
@@ -23,11 +25,8 @@ namespace B2B.CryptoLib
             var keyManagerService = new KeyManagerService(normalized.KeyManagerBasePath, cryptoService);
 
             _dataEncryptionService = new DataEncryptionService(cryptoService, keyManagerService);
+            _keyManagerService = keyManagerService;
             _activeUnifiedName = normalized.ActiveUnifiedName;
-
-            // Keep the existing update/current/history lifecycle while making the
-            // standalone API ready to use immediately after creation.
-            keyManagerService.StartAsync().GetAwaiter().GetResult();
         }
 
         /// <summary>
@@ -36,14 +35,31 @@ namespace B2B.CryptoLib
         public static CryptoClient Create(CryptoOptions options) => new CryptoClient(options);
 
         internal CryptoClient(IDataEncryptionService dataEncryptionService)
-            : this(dataEncryptionService, null)
+            : this(dataEncryptionService, null, null)
         {
         }
 
         internal CryptoClient(IDataEncryptionService dataEncryptionService, string? activeUnifiedName)
+            : this(dataEncryptionService, null, activeUnifiedName)
+        {
+        }
+
+        internal CryptoClient(IDataEncryptionService dataEncryptionService, KeyManagerService? keyManagerService, string? activeUnifiedName)
         {
             _dataEncryptionService = dataEncryptionService ?? throw new ArgumentNullException(nameof(dataEncryptionService));
+            _keyManagerService = keyManagerService;
             _activeUnifiedName = activeUnifiedName;
+        }
+
+        /// <summary>
+        /// 明確執行一次 Update 金鑰組發布；建構 client 時不會自動掃描或消費 Update 檔案。
+        /// </summary>
+        public Task UpdateKeySetsAsync()
+        {
+            if (_keyManagerService is null)
+                throw new InvalidOperationException("This CryptoClient is not associated with a KeyManagerService.");
+
+            return _keyManagerService.StartAsync();
         }
 
         /// <inheritdoc />
@@ -64,10 +80,9 @@ namespace B2B.CryptoLib
         /// <inheritdoc />
         public string? Decrypt(string? encryptedDataWithUnifiedName) => _dataEncryptionService.Decrypt(encryptedDataWithUnifiedName);
 
-        /// <inheritdoc />
-        public bool IsEncrypted(string? data) => _dataEncryptionService.IsValidEncryptedFormat(data);
-
-        /// <inheritdoc />
+        /// <summary>
+        /// 僅驗證外層格式，不執行 authentication 或解密。
+        /// </summary>
         public bool IsValidEncryptedFormat(string? data) => _dataEncryptionService.IsValidEncryptedFormat(data);
 
         /// <inheritdoc />

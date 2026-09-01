@@ -1,4 +1,6 @@
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using B2B.CryptoLib.Models;
 
 namespace B2B.CryptoLib
@@ -21,19 +23,28 @@ namespace B2B.CryptoLib
 
             lock (SyncRoot)
             {
-                if (_defaultClient is not null)
+                var existingClient = Volatile.Read(ref _defaultClient);
+
+                if (existingClient is not null)
                 {
-                    if (_defaultOptions is not null && CryptoOptions.AreEquivalent(_defaultOptions, normalized))
+                    var existingOptions = Volatile.Read(ref _defaultOptions);
+
+                    if (existingOptions is not null && CryptoOptions.AreEquivalent(existingOptions, normalized))
                         return;
 
                     throw new InvalidOperationException("Crypto has already been initialized with a different configuration. Create an isolated CryptoClient for another key context.");
                 }
 
                 var client = new CryptoClient(normalized);
-                _defaultClient = client;
-                _defaultOptions = normalized;
+                Volatile.Write(ref _defaultOptions, normalized);
+                Volatile.Write(ref _defaultClient, client);
             }
         }
+
+        /// <summary>
+        /// 明確執行一次 default client 的 Update 金鑰組發布。
+        /// </summary>
+        public static Task UpdateKeySetsAsync() => GetDefaultClient().UpdateKeySetsAsync();
 
         /// <inheritdoc cref="CryptoClient.Encrypt(string?)" />
         public static string? Encrypt(string? plainText) => GetDefaultClient().Encrypt(plainText);
@@ -44,10 +55,9 @@ namespace B2B.CryptoLib
         /// <inheritdoc cref="CryptoClient.Decrypt(string?)" />
         public static string? Decrypt(string? encryptedDataWithUnifiedName) => GetDefaultClient().Decrypt(encryptedDataWithUnifiedName);
 
-        /// <inheritdoc cref="CryptoClient.IsEncrypted(string?)" />
-        public static bool IsEncrypted(string? data) => GetDefaultClient().IsEncrypted(data);
-
-        /// <inheritdoc cref="CryptoClient.IsValidEncryptedFormat(string?)" />
+        /// <summary>
+        /// 僅驗證外層格式，不代表資料已通過 authentication 或可使用目前金鑰解密。
+        /// </summary>
         public static bool IsValidEncryptedFormat(string? data) => GetDefaultClient().IsValidEncryptedFormat(data);
 
         /// <inheritdoc cref="CryptoClient.GetUnifiedName(string?)" />
@@ -62,17 +72,14 @@ namespace B2B.CryptoLib
         {
             lock (SyncRoot)
             {
-                _defaultClient = null;
-                _defaultOptions = null;
+                Volatile.Write(ref _defaultClient, null);
+                Volatile.Write(ref _defaultOptions, null);
             }
         }
 
         private static CryptoClient GetDefaultClient()
         {
-            lock (SyncRoot)
-            {
-                return _defaultClient ?? throw new InvalidOperationException("Crypto has not been initialized. Call Crypto.Initialize(...) before using it.");
-            }
+            return Volatile.Read(ref _defaultClient) ?? throw new InvalidOperationException("Crypto has not been initialized. Call Crypto.Initialize(...) before using it.");
         }
     }
 }
