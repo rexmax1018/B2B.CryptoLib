@@ -50,6 +50,8 @@ namespace B2B.CryptoLib.KeyGeneration.KeyGenerators
 
         private static string WritePem(object value)
         {
+            // Keep the established PEM writer so generated .public.pem and
+            // .private.pem files retain their existing labels and key layout.
             using (var writer = new StringWriter())
             {
                 new PemWriter(writer).WriteObject(value);

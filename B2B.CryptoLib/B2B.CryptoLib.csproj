@@ -3,17 +3,19 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>B2B.CryptoLib</RootNamespace>
     <AssemblyName>B2B.CryptoLib</AssemblyName>
-    <Version>2.0.0</Version>
+    <!-- 2.0.1 identifies the dependency-modernized package candidate. -->
+    <Version>2.0.1</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
+  <!-- Keep production package references explicit per project; this goal does not introduce central package management. -->
   <ItemGroup>
-    <PackageReference Include="Autofac" Version="6.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
+    <PackageReference Include="Autofac" Version="9.3.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
   </ItemGroup>
 
   <ItemGroup>

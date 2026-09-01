@@ -65,6 +65,8 @@ namespace B2B.CryptoLib.Services
 
         private static byte[] TransformAes(byte[] data, SymmetricKeyModel key, bool encrypt)
         {
+            // Keep the existing Bouncy Castle AES-CBC plus padded-block pipeline;
+            // the dependency migration must leave legacy CBC ciphertext unchanged.
             var cipher = new PaddedBufferedBlockCipher(new CbcBlockCipher(new AesEngine()));
 
             cipher.Init(encrypt, new ParametersWithIV(new KeyParameter(key.Key), key.IV));
@@ -86,6 +88,8 @@ namespace B2B.CryptoLib.Services
 
         private static byte[] TransformRsa(byte[] data, string pem, bool encrypt)
         {
+            // OAEP remains the current RSA contract. Legacy key-set wrapping uses
+            // PKCS#1 v1.5 in LegacyKeySetCrypto and is intentionally kept separate.
             var cipher = new OaepEncoding(new RsaEngine());
 
             cipher.Init(encrypt, ReadKey(pem));
@@ -124,6 +128,8 @@ namespace B2B.CryptoLib.Services
 
         private static AsymmetricKeyParameter ReadKey(string pem)
         {
+            // Preserve support for both PEM key pairs and standalone public keys;
+            // these formats are part of the existing .pub/.priv contract.
             using (var reader = new StringReader(pem))
             {
                 var value = new PemReader(reader).ReadObject();

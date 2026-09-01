@@ -38,6 +38,8 @@ namespace B2B.CryptoLib.Services
 
         private static byte[] Transform(byte[] data, string pem, bool encrypt)
         {
+            // .der key-set material is the legacy RSA PKCS#1 v1.5 format; do not
+            // replace it with the OAEP path used by the current public API.
             var cipher = new Pkcs1Encoding(new RsaEngine());
             cipher.Init(encrypt, ReadKey(pem));
 

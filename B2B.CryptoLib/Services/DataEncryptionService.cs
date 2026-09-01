@@ -121,6 +121,8 @@ namespace B2B.CryptoLib.Services
 
             RandomNumberGenerator.Fill(nonce);
 
+            // Keep the Bouncy Castle GCM primitive and the existing v2 envelope:
+            // magic, version, 12-byte nonce, ciphertext/tag, and unifiedName AAD.
             var cipher = new GcmBlockCipher(new AesEngine());
             cipher.Init(true, new AeadParameters(new KeyParameter(key.Key), GcmTagLengthBits, nonce, Encoding.UTF8.GetBytes(unifiedName)));
 

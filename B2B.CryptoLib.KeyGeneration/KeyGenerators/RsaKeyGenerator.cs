@@ -51,6 +51,8 @@ namespace B2B.CryptoLib.KeyGeneration.KeyGenerators
 
         private static string WritePem(object value)
         {
+            // Keep the established PEM writer so generated RSA key files remain
+            // compatible with existing .pub/.priv and legacy .pem consumers.
             using (var writer = new StringWriter())
             {
                 new PemWriter(writer).WriteObject(value);

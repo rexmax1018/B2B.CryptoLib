@@ -144,9 +144,28 @@ dotnet run --project B2B.CryptoLib.KeyGenTool -- KEYSET B2B_20260901
 
 All production, tool and test projects target `net10.0` and use SDK-style
 projects with `PackageReference` and nullable reference types enabled. .NET
-Framework 4.8 is no longer supported. The current crypto dependencies remain
-Autofac 6.0.0, Portable.BouncyCastle 1.9.0 and Newtonsoft.Json 13.0.1; unused
-direct compatibility references and NLog were removed.
+Framework 4.8 is no longer supported. This dependency-modernized package
+candidate is `B2B.CryptoLib` version `2.0.1`.
+
+Production projects use the following direct dependencies:
+
+- `Autofac` 9.3.2
+- `BouncyCastle.Cryptography` 2.7.0 (replacing the deprecated
+  `Portable.BouncyCastle` 1.9.0 package)
+- `Newtonsoft.Json` 13.0.4
+
+The test project uses `xunit.v3` 4.0.0, `Microsoft.NET.Test.Sdk` 18.9.0 and
+`xunit.runner.visualstudio` 4.0.0. xUnit v3 requires the test project to be an
+executable; the `.NET 10` `dotnet test` integration uses the Microsoft Testing
+Platform runner selected in `global.json`. The VSTest SDK and Visual Studio
+adapter remain direct test-only dependencies for existing VSTest and Test
+Explorer workflows. Unused direct compatibility references and NLog were
+removed.
+
+The Bouncy Castle package identity changed without changing CryptoLib's public
+crypto contract, ciphertext formats, key layouts or cryptographic semantics.
+The existing CBC, legacy RSA PKCS#1, RSA OAEP, ECC, GCM v2, key rotation and
+cache-invalidation regression coverage remains in place.
 
 Integration with `B2B_API`, EF Core, Oracle and B2B.Dao mapping is intentionally
 deferred to the separate `GOAL-B2B-API-CRYPTOLIB-INTEGRATION` goal.

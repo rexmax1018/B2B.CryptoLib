@@ -9,8 +9,9 @@
     <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
 
+  <!-- The offline key-generation tool uses the same Autofac major as the library modules. -->
   <ItemGroup>
-    <PackageReference Include="Autofac" Version="6.0.0" />
+    <PackageReference Include="Autofac" Version="9.3.2" />
   </ItemGroup>
 
   <ItemGroup>
