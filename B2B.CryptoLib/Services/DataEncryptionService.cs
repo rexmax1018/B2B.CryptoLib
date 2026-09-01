@@ -36,7 +36,7 @@ namespace B2B.CryptoLib.Services
         /// <summary>
         /// 使用指定統一名稱的 AES 金鑰加密文字。
         /// </summary>
-        public string Encrypt(string plainText, string unifiedName)
+        public string? Encrypt(string? plainText, string? unifiedName)
         {
             if (string.IsNullOrEmpty(plainText))
                 return null;
@@ -53,12 +53,15 @@ namespace B2B.CryptoLib.Services
         /// <summary>
         /// 解密 <c>Base64.unifiedName</c> 格式的資料。
         /// </summary>
-        public string Decrypt(string encryptedDataWithUnifiedName)
+        public string? Decrypt(string? encryptedDataWithUnifiedName)
         {
             if (string.IsNullOrEmpty(encryptedDataWithUnifiedName))
                 return null;
 
             var unifiedName = GetUnifiedNameFromEncryptedData(encryptedDataWithUnifiedName);
+
+            if (unifiedName is null)
+                return null;
             var separator = encryptedDataWithUnifiedName.LastIndexOf('.');
             var encrypted = Convert.FromBase64String(encryptedDataWithUnifiedName.Substring(0, separator));
             var key = _keyManagerService.GetAesKey(unifiedName);
@@ -72,7 +75,7 @@ namespace B2B.CryptoLib.Services
         /// <summary>
         /// 從加密字串的尾綴擷取統一金鑰名稱。
         /// </summary>
-        public string GetUnifiedNameFromEncryptedData(string encryptedDataWithUnifiedName)
+        public string? GetUnifiedNameFromEncryptedData(string? encryptedDataWithUnifiedName)
         {
             if (string.IsNullOrEmpty(encryptedDataWithUnifiedName))
                 return null;
@@ -88,7 +91,7 @@ namespace B2B.CryptoLib.Services
         /// <summary>
         /// 判斷字串是否符合可解碼的加密資料格式。
         /// </summary>
-        public bool IsValidEncryptedFormat(string data)
+        public bool IsValidEncryptedFormat(string? data)
         {
             if (string.IsNullOrEmpty(data))
                 return false;
@@ -116,8 +119,7 @@ namespace B2B.CryptoLib.Services
 
             var nonce = new byte[GcmNonceLength];
 
-            using (var random = new RNGCryptoServiceProvider())
-                random.GetBytes(nonce);
+            RandomNumberGenerator.Fill(nonce);
 
             var cipher = new GcmBlockCipher(new AesEngine());
             cipher.Init(true, new AeadParameters(new KeyParameter(key.Key), GcmTagLengthBits, nonce, Encoding.UTF8.GetBytes(unifiedName)));

@@ -1,41 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{D82259A7-EA3A-4C65-BB91-354E0D0C10F7}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>B2B.CryptoLib</RootNamespace>
     <AssemblyName>B2B.CryptoLib</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <Version>2.0.0</Version>
     <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols><DebugType>full</DebugType><Optimize>false</Optimize><OutputPath>bin\Debug\</OutputPath><DefineConstants>DEBUG;TRACE</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType><Optimize>true</Optimize><OutputPath>bin\Release\</OutputPath><DefineConstants>TRACE</DefineConstants>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Autofac"><HintPath>packages\autofac.6.0.0\lib\netstandard2.0\Autofac.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="BouncyCastle.Crypto"><HintPath>packages\portable.bouncycastle.1.9.0\lib\net40\BouncyCastle.Crypto.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces"><HintPath>packages\microsoft.bcl.asyncinterfaces.1.1.0\lib\net461\Microsoft.Bcl.AsyncInterfaces.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="Newtonsoft.Json"><HintPath>packages\newtonsoft.json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="NLog"><HintPath>packages\nlog.4.7.3\lib\net45\NLog.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="System.Buffers"><HintPath>packages\system.buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="System.Diagnostics.DiagnosticSource"><HintPath>packages\system.diagnostics.diagnosticsource.4.7.1\lib\net46\System.Diagnostics.DiagnosticSource.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="System.Memory"><HintPath>packages\system.memory.4.5.4\lib\net461\System.Memory.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="System.Numerics.Vectors"><HintPath>packages\system.numerics.vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="System.Runtime.CompilerServices.Unsafe"><HintPath>packages\system.runtime.compilerservices.unsafe.4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath><Private>True</Private></Reference>
-    <Reference Include="System.Threading.Tasks.Extensions"><HintPath>packages\system.threading.tasks.extensions.4.5.2\lib\portable-net45+win8+wp8+wpa81\System.Threading.Tasks.Extensions.dll</HintPath><Private>True</Private></Reference>
+    <PackageReference Include="Autofac" Version="6.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="**\*.cs" Exclude="obj\**\*.cs;bin\**\*.cs" />
-    <None Include="app.config" />
-    <None Include="appsettings.json" />
-    <None Include="packages.config" />
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

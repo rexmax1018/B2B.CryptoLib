@@ -44,7 +44,7 @@ namespace B2B.CryptoLib.KeyGenTool
             }
         }
 
-        private static object Generate(IContainer container, string algorithm, string fileName)
+        private static object Generate(IContainer container, string algorithm, string? fileName)
         {
             switch (algorithm.ToUpperInvariant())
             {

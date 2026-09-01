@@ -22,7 +22,7 @@ namespace B2B.CryptoLib.Services
         /// <summary>
         /// 使用指定演算法與金鑰模型加密位元組資料。
         /// </summary>
-        public byte[] Encrypt<TKeyModel>(byte[] data, CryptoAlgorithmType algorithm, TKeyModel keyModel) where TKeyModel : class
+        public byte[] Encrypt<TKeyModel>(byte[]? data, CryptoAlgorithmType algorithm, TKeyModel keyModel) where TKeyModel : class
         {
             if (data == null)
                 throw new ArgumentNullException(nameof(data));
@@ -39,7 +39,7 @@ namespace B2B.CryptoLib.Services
         /// <summary>
         /// 使用指定演算法與金鑰模型解密位元組資料。
         /// </summary>
-        public byte[] Decrypt<TKeyModel>(byte[] encrypted, CryptoAlgorithmType algorithm, TKeyModel keyModel) where TKeyModel : class
+        public byte[] Decrypt<TKeyModel>(byte[]? encrypted, CryptoAlgorithmType algorithm, TKeyModel keyModel) where TKeyModel : class
         {
             if (encrypted == null)
                 throw new ArgumentNullException(nameof(encrypted));
@@ -56,7 +56,7 @@ namespace B2B.CryptoLib.Services
         /// <summary>
         /// 使用私鑰對資料產生數位簽章。
         /// </summary>
-        public byte[] Sign<TKeyModel>(byte[] data, CryptoAlgorithmType algorithm, TKeyModel privateKeyModel) where TKeyModel : class => SignOrVerify(data, null, algorithm, privateKeyModel, true);
+        public byte[] Sign<TKeyModel>(byte[] data, CryptoAlgorithmType algorithm, TKeyModel privateKeyModel) where TKeyModel : class => SignOrVerify(data, null, algorithm, privateKeyModel, true)!;
 
         /// <summary>
         /// 使用公鑰驗證數位簽章。
@@ -93,7 +93,7 @@ namespace B2B.CryptoLib.Services
             return cipher.ProcessBlock(data, 0, data.Length);
         }
 
-        private static byte[] SignOrVerify<T>(byte[] data, byte[] signature, CryptoAlgorithmType algorithm, T model, bool sign) where T : class
+        private static byte[]? SignOrVerify<T>(byte[] data, byte[]? signature, CryptoAlgorithmType algorithm, T model, bool sign) where T : class
         {
             string pem;
             string algorithmName;

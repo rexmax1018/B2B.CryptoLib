@@ -9,7 +9,8 @@ namespace B2B.CryptoLib.Models
     /// </summary>
     public class CryptoSuiteDomain
     {
-        private readonly KeyManagerService _keyManagerService; private readonly IDataEncryptionService _dataEncryptionService;
+        private readonly KeyManagerService _keyManagerService;
+        private readonly IDataEncryptionService _dataEncryptionService;
 
         public CryptoSuiteDomain(KeyManagerService keyManagerService, IDataEncryptionService dataEncryptionService)
         {
@@ -17,8 +18,8 @@ namespace B2B.CryptoLib.Models
             _dataEncryptionService = dataEncryptionService ?? throw new ArgumentNullException(nameof(dataEncryptionService));
         }
 
-        public string EncryptByCryptoSuite(string plainText) => _dataEncryptionService.Encrypt(plainText, _keyManagerService.GetLatestActiveUnifiedName());
+        public string? EncryptByCryptoSuite(string? plainText) => _dataEncryptionService.Encrypt(plainText, _keyManagerService.GetLatestActiveUnifiedName());
 
-        public string DecryptByCryptoSuite(string encryptedText) => _dataEncryptionService.Decrypt(encryptedText);
+        public string? DecryptByCryptoSuite(string? encryptedText) => _dataEncryptionService.Decrypt(encryptedText);
     }
 }

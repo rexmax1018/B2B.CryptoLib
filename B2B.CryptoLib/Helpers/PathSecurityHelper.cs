@@ -11,6 +11,10 @@ namespace B2B.CryptoLib.Helpers
     {
         private static readonly Regex SafeUnifiedNameRegex = new Regex(@"^[a-zA-Z0-9_-]+$", RegexOptions.Compiled);
 
+        internal static StringComparison PathComparison => OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
         public static string ValidateAndGetSafeDirectoryPath(string baseDirectory, string targetDirectory, bool requireExists = true)
         {
             if (string.IsNullOrWhiteSpace(baseDirectory))
@@ -66,7 +70,7 @@ namespace B2B.CryptoLib.Helpers
 
         public static bool IsSafeUnifiedName(string unifiedName) => !string.IsNullOrWhiteSpace(unifiedName) && SafeUnifiedNameRegex.IsMatch(unifiedName);
 
-        public static bool IsPathUnderDirectory(string targetPath, string baseDirectory) => !string.IsNullOrWhiteSpace(targetPath) && !string.IsNullOrWhiteSpace(baseDirectory) && Path.GetFullPath(targetPath).StartsWith(NormalizeDirectoryPath(baseDirectory), StringComparison.OrdinalIgnoreCase);
+        public static bool IsPathUnderDirectory(string targetPath, string baseDirectory) => !string.IsNullOrWhiteSpace(targetPath) && !string.IsNullOrWhiteSpace(baseDirectory) && Path.GetFullPath(targetPath).StartsWith(NormalizeDirectoryPath(baseDirectory), PathComparison);
 
         private static string NormalizeDirectoryPath(string path) => Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
     }

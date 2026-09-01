@@ -10,6 +10,6 @@ namespace B2B.CryptoLib.KeyGeneration.Interfaces
     {
         TModel GenerateKeyOnly<TModel>(CryptoAlgorithmType algorithm) where TModel : class;
 
-        KeyGenerationResult GenerateAndSaveKey<TModel>(CryptoAlgorithmType algorithm, string filePath = null) where TModel : class;
+        KeyGenerationResult GenerateAndSaveKey<TModel>(CryptoAlgorithmType algorithm, string? filePath = null) where TModel : class;
     }
 }

@@ -14,7 +14,7 @@ namespace B2B.CryptoLib.Config
     /// </summary>
     public static class CryptoConfig
     {
-        private static CryptoConfigModel _cachedConfig;
+        private static CryptoConfigModel? _cachedConfig;
 
         /// <summary>
         /// 取得目前已載入的 CryptoSuite 設定。
@@ -42,7 +42,7 @@ namespace B2B.CryptoLib.Config
         /// <summary>
         /// 直接覆寫目前設定，供單元測試或宿主程式使用。
         /// </summary>
-        public static void Override(CryptoConfigModel model)
+        public static void Override(CryptoConfigModel? model)
         {
             _cachedConfig = model;
         }
@@ -57,8 +57,7 @@ namespace B2B.CryptoLib.Config
 
             var randomBytes = new byte[length];
 
-            using (var rng = new RNGCryptoServiceProvider())
-                rng.GetBytes(randomBytes);
+            RandomNumberGenerator.Fill(randomBytes);
 
             var nameBuilder = new StringBuilder(length);
 

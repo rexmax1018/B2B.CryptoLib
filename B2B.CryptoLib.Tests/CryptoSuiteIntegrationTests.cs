@@ -10,6 +10,7 @@ using B2B.CryptoLib.Services;
 using System;
 using System.IO;
 using CryptographicException = System.Security.Cryptography.CryptographicException;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -57,6 +58,7 @@ namespace B2B.CryptoLib.Tests
             Assert.NotNull(_container.Resolve<ICryptoService>());
             Assert.NotNull(_container.Resolve<IDataEncryptionService>());
             Assert.NotNull(_container.Resolve<KeyManagerService>());
+            Assert.NotNull(_container.Resolve<ICryptoClient>());
         }
 
         [Fact]
@@ -199,16 +201,45 @@ namespace B2B.CryptoLib.Tests
             WriteKeySetToUpdateFolder(unifiedName, rsa, aes, cryptoService);
             await keyManager.StartAsync();
 
-            var first = dataEncryption.Encrypt(plainText, unifiedName);
-            var second = dataEncryption.Encrypt(plainText, unifiedName);
+            var first = dataEncryption.Encrypt(plainText, unifiedName)!;
+            var second = dataEncryption.Encrypt(plainText, unifiedName)!;
             var separator = first.LastIndexOf('.');
 
             Assert.NotEqual(first, second);
             Assert.Equal(unifiedName, first.Substring(separator + 1));
             Assert.DoesNotContain(".", first.Substring(0, separator));
-            Assert.NotEmpty(Convert.FromBase64String(first.Substring(0, separator)));
+            var payload = Convert.FromBase64String(first.Substring(0, separator));
+            var magic = Encoding.ASCII.GetBytes("B2BCGCM");
+
+            Assert.Equal(magic, payload.Take(magic.Length).ToArray());
+            Assert.Equal((byte)2, payload[magic.Length]);
+            Assert.Equal(Encoding.UTF8.GetByteCount(plainText) + 16, payload.Length - magic.Length - 1 - 12);
             Assert.Equal(plainText, dataEncryption.Decrypt(first));
             Assert.Equal(plainText, dataEncryption.Decrypt(second));
+        }
+
+        [Fact]
+        public async Task DataEncryptionService_RejectsUnsupportedGcmVersion()
+        {
+            const string unifiedName = "20260713Version";
+
+            var keyGeneration = _container.Resolve<IKeyGenerationService>();
+            var cryptoService = _container.Resolve<ICryptoService>();
+            var keyManager = _container.Resolve<KeyManagerService>();
+            var dataEncryption = _container.Resolve<IDataEncryptionService>();
+            var rsa = keyGeneration.GenerateKeyOnly<RsaKeyModel>(CryptoAlgorithmType.RSA);
+            var aes = keyGeneration.GenerateKeyOnly<SymmetricKeyModel>(CryptoAlgorithmType.AES);
+
+            WriteKeySetToUpdateFolder(unifiedName, rsa, aes, cryptoService);
+            await keyManager.StartAsync();
+
+            var encrypted = dataEncryption.Encrypt("版本測試", unifiedName)!;
+            var separator = encrypted.LastIndexOf('.');
+            var payload = Convert.FromBase64String(encrypted.Substring(0, separator));
+            payload["B2BCGCM".Length] = 3;
+            var tampered = Convert.ToBase64String(payload) + encrypted.Substring(separator);
+
+            Assert.Throws<CryptographicException>(() => dataEncryption.Decrypt(tampered));
         }
 
         [Fact]
@@ -247,7 +278,7 @@ namespace B2B.CryptoLib.Tests
             WriteKeySetToUpdateFolder(unifiedName, rsa, aes, cryptoService);
             await keyManager.StartAsync();
 
-            var encrypted = dataEncryption.Encrypt("不可被竄改", unifiedName);
+            var encrypted = dataEncryption.Encrypt("不可被竄改", unifiedName)!;
             var separator = encrypted.LastIndexOf('.');
             var payload = Convert.FromBase64String(encrypted.Substring(0, separator));
             payload[payload.Length - 1] ^= 0x01;
@@ -313,7 +344,7 @@ namespace B2B.CryptoLib.Tests
             var keySetRoot = Path.Combine(_testRoot, "key-sets");
             WriteLegacyKeySetToHistory(oldUnifiedName, oldRsa, oldAes, keySetRoot);
             var legacyValue = Convert.ToBase64String(cryptoService.Encrypt(Encoding.UTF8.GetBytes(legacyPlainText), CryptoAlgorithmType.AES, oldAes)) + "." + oldUnifiedName;
-            var oldGcmValue = dataEncryption.Encrypt(oldGcmPlainText, oldUnifiedName);
+            var oldGcmValue = dataEncryption.Encrypt(oldGcmPlainText, oldUnifiedName)!;
 
             CryptoConfig.Override(new CryptoConfigModel
             {
@@ -325,7 +356,7 @@ namespace B2B.CryptoLib.Tests
             keySetGeneration.GenerateAndSave(newUnifiedName);
             await keyManager.StartAsync();
 
-            var newGcmValue = dataEncryption.Encrypt(newGcmPlainText, newUnifiedName);
+            var newGcmValue = dataEncryption.Encrypt(newGcmPlainText, newUnifiedName)!;
             var oldValueWithNewKeyName = oldGcmValue.Substring(0, oldGcmValue.LastIndexOf('.') + 1) + newUnifiedName;
 
             Assert.Equal(newUnifiedName, keyManager.GetLatestActiveUnifiedName());
@@ -364,8 +395,8 @@ namespace B2B.CryptoLib.Tests
 
             var writer = new DataEncryptionService(cryptoService, keyManager);
             var legacyCbcCipher = Convert.ToBase64String(cryptoService.Encrypt(Encoding.UTF8.GetBytes(legacyCbcPlainText), CryptoAlgorithmType.AES, legacyAes)) + "." + legacyUnifiedName;
-            var legacyKeyGcmCipher = writer.Encrypt(legacyKeyGcmPlainText, legacyUnifiedName);
-            var newKeyGcmCipher = writer.Encrypt(newKeyGcmPlainText, newUnifiedName);
+            var legacyKeyGcmCipher = writer.Encrypt(legacyKeyGcmPlainText, legacyUnifiedName)!;
+            var newKeyGcmCipher = writer.Encrypt(newKeyGcmPlainText, newUnifiedName)!;
 
             // 使用新的服務執行個體，確保資料會從 current/history 重新載入而非沿用 writer 快取。
             var reader = new DataEncryptionService(cryptoService, new KeyManagerService(keySetRoot, cryptoService));
@@ -379,6 +410,33 @@ namespace B2B.CryptoLib.Tests
 
             Assert.Throws<CryptographicException>(() => reader.Decrypt(legacyCipherWithNewName));
             Assert.Throws<CryptographicException>(() => reader.Decrypt(newCipherWithLegacyName));
+        }
+
+        [Fact]
+        public async Task KeyManagerService_ClearsCacheWhenReplacingSameUnifiedName()
+        {
+            const string unifiedName = "cache-rotate";
+
+            var cryptoService = _container.Resolve<ICryptoService>();
+            var keyGeneration = _container.Resolve<IKeyGenerationService>();
+            var keyManager = _container.Resolve<KeyManagerService>();
+            var oldRsa = keyGeneration.GenerateKeyOnly<RsaKeyModel>(CryptoAlgorithmType.RSA);
+            var oldAes = keyGeneration.GenerateKeyOnly<SymmetricKeyModel>(CryptoAlgorithmType.AES);
+
+            WriteKeySetToUpdateFolder(unifiedName, oldRsa, oldAes, cryptoService);
+            await keyManager.StartAsync();
+            var cached = keyManager.GetAesKey(unifiedName);
+
+            var newRsa = keyGeneration.GenerateKeyOnly<RsaKeyModel>(CryptoAlgorithmType.RSA);
+            var newAes = keyGeneration.GenerateKeyOnly<SymmetricKeyModel>(CryptoAlgorithmType.AES);
+
+            WriteKeySetToUpdateFolder(unifiedName, newRsa, newAes, cryptoService);
+            await keyManager.StartAsync();
+            var rotated = keyManager.GetAesKey(unifiedName);
+
+            Assert.Equal(oldAes.Key, cached.Key);
+            Assert.Equal(newAes.Key, rotated.Key);
+            Assert.NotEqual(cached.Key, rotated.Key);
         }
 
         private void WriteKeySetToUpdateFolder(string unifiedName, RsaKeyModel rsa, SymmetricKeyModel aes, ICryptoService cryptoService)
