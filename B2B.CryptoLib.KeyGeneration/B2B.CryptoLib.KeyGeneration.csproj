@@ -9,7 +9,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
-  <!-- Keep key-generation dependencies explicit and aligned with the production package graph. -->
+  <!-- 明確列出金鑰產生相依套件，並與正式環境套件圖保持一致。 -->
   <ItemGroup>
     <PackageReference Include="Autofac" Version="9.3.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />

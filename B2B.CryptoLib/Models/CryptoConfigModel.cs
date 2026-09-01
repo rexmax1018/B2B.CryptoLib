@@ -7,7 +7,7 @@ namespace B2B.CryptoLib.Models
     /// <summary>
     /// AES 加密設定。
     /// </summary>
-    /// <remarks>此模型保留舊版設定檔形狀；runtime GCM v2 目前固定以 AES 金鑰及 nonce 處理資料。</remarks>
+    /// <remarks>此模型保留舊版設定檔形狀；執行階段 GCM v2 目前固定以 AES 金鑰及 nonce（隨機數）處理資料。</remarks>
     public class AesConfig
     {
         /// <summary>要產生或使用的 AES 金鑰位元數；預設為 256。</summary>
@@ -20,10 +20,10 @@ namespace B2B.CryptoLib.Models
     /// <summary>
     /// RSA 加密設定。
     /// </summary>
-    /// <remarks>KeyGeneration 以此設定產生 RSA 金鑰；runtime 的 OAEP 路徑讀取已產生的 PEM 金鑰。</remarks>
+    /// <remarks>KeyGeneration 以此設定產生 RSA 金鑰；執行階段的 OAEP 路徑讀取已產生的 PEM 金鑰。</remarks>
     public class RsaConfig
     {
-        /// <summary>要產生的 RSA modulus 位元數；預設為 2048。</summary>
+        /// <summary>要產生的 RSA 模數位元數；預設為 2048。</summary>
         public int KeySize { get; set; } = 2048;
 
         /// <summary>舊版設定所指定的文字編碼；預設為 UTF-8。</summary>
@@ -36,7 +36,7 @@ namespace B2B.CryptoLib.Models
     /// <summary>
     /// ECC 加密設定。
     /// </summary>
-    /// <remarks>KeyGeneration 依 <see cref="Curve"/> 選擇曲線；簽章使用 SHA-256 with ECDSA。</remarks>
+    /// <remarks>KeyGeneration 依 <see cref="Curve"/> 選擇曲線；簽章使用 SHA-256 搭配 ECDSA。</remarks>
     public class EccConfig
     {
         /// <summary>要產生的 ECC 曲線；預設為 <see cref="EccCurveType.NistP256"/>。</summary>
@@ -53,19 +53,19 @@ namespace B2B.CryptoLib.Models
     /// CryptoSuite 設定模型，包含金鑰目錄與各演算法參數。
     /// </summary>
     /// <remarks>
-    /// 這個 class 是 <see cref="B2B.CryptoLib.Config.CryptoConfig"/> 的相容資料模型，不等同於
+    /// 這個類別是 <see cref="B2B.CryptoLib.Config.CryptoConfig"/> 的相容資料模型，不等同於
     /// <see cref="CryptoOptions"/>。設定檔序列化時使用 <c>AES</c>、<c>RSA</c>、
-    /// <c>ECC</c> 與 <c>UseUrlSafeBase64</c> 欄位；runtime client 不會隱式讀取它。
+    /// <c>ECC</c> 與 <c>UseUrlSafeBase64</c> 欄位；執行階段用戶端不會隱式讀取它。
     /// </remarks>
     public class CryptoConfigModel
     {
         private string _basePath = "Keys";
 
         /// <summary>
-        /// 取得以應用程式 base directory 為基準解析後的金鑰目錄，或設定原始絕對／相對路徑。
+    /// 取得以應用程式基底目錄為基準解析後的金鑰目錄，或設定原始絕對／相對路徑。
         /// </summary>
-        /// <value>絕對路徑會原樣使用；相對路徑會解析為 <see cref="AppDomain.CurrentDomain"/> base directory 下的完整路徑。</value>
-        /// <remarks>setter 不會建立目錄；目錄建立由使用它的 generator 或 key manager 負責。</remarks>
+    /// <value>絕對路徑會原樣使用；相對路徑會解析為 <see cref="AppDomain.CurrentDomain"/> 基底目錄下的完整路徑。</value>
+    /// <remarks>設定器不會建立目錄；目錄建立由使用它的產生器或金鑰管理器負責。</remarks>
         public string KeyDirectory
         {
             get => Path.IsPathRooted(_basePath) ? _basePath : Path.GetFullPath(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, _basePath));

@@ -7,19 +7,19 @@ namespace B2B.CryptoLib.Extensions
     /// <summary>
     /// 提供 Base64、Hex、文字編碼與 JSON 序列化的字串擴充方法。
     /// </summary>
-    /// <remarks>這些方法使用標準 .NET／Newtonsoft 表示法，不會自動套用 CryptoSuite 的 key-set 或 envelope 規則。</remarks>
+    /// <remarks>這些方法使用標準 .NET／Newtonsoft 表示法，不會自動套用 CryptoSuite 的金鑰組或封裝格式規則。</remarks>
     public static class StringExtensions
     {
-        /// <summary>將標準 Base64 字串解碼為 bytes。</summary>
-        /// <param name="base64">包含有效 Base64 字元與 padding 的字串。</param>
-        /// <returns>解碼後的 bytes。</returns>
+        /// <summary>將標準 Base64 字串解碼為位元組。</summary>
+        /// <param name="base64">包含有效 Base64 字元與填充的字串。</param>
+        /// <returns>解碼後的位元組。</returns>
         /// <exception cref="FormatException">字串不是有效 Base64。</exception>
         /// <exception cref="ArgumentNullException"><paramref name="base64"/> 為 <see langword="null"/>。</exception>
         public static byte[] FromBase64(this string base64) => Convert.FromBase64String(base64);
 
-        /// <summary>將偶數長度的十六進位字串解碼為 bytes。</summary>
-        /// <param name="hex">每兩個字元表示一個 byte 的十六進位字串。</param>
-        /// <returns>解碼後的 bytes；空字串會回傳空陣列。</returns>
+        /// <summary>將偶數長度的十六進位字串解碼為位元組。</summary>
+        /// <param name="hex">每兩個字元表示一個位元組的十六進位字串。</param>
+        /// <returns>解碼後的位元組；空字串會回傳空陣列。</returns>
         /// <exception cref="FormatException">長度為奇數或包含非十六進位字元。</exception>
         public static byte[] FromHex(this string hex)
         {
@@ -34,10 +34,10 @@ namespace B2B.CryptoLib.Extensions
             return result;
         }
 
-        /// <summary>以指定編碼將文字轉為 bytes。</summary>
+        /// <summary>以指定編碼將文字轉為位元組。</summary>
         /// <param name="text">要編碼的文字。</param>
         /// <param name="encoding">使用的編碼；省略時為 UTF-8。</param>
-        /// <returns>編碼後的 bytes。</returns>
+        /// <returns>編碼後的位元組。</returns>
         /// <exception cref="ArgumentNullException"><paramref name="text"/> 為 <see langword="null"/>。</exception>
         public static byte[] ToBytes(this string text, Encoding? encoding = null) => (encoding ?? Encoding.UTF8).GetBytes(text);
 

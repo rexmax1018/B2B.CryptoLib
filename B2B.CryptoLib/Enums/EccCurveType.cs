@@ -3,7 +3,7 @@
     /// <summary>
     /// ECC 支援的橢圓曲線類型。
     /// </summary>
-    /// <remarks>曲線選擇會寫入 <see cref="Models.EccKeyModel.Curve"/>，並影響離線產生器的 domain parameters。</remarks>
+    /// <remarks>曲線選擇會寫入 <see cref="Models.EccKeyModel.Curve"/>，並影響離線產生器的領域參數。</remarks>
     public enum EccCurveType
     {
         /// <summary>NIST P-256，常用且相容性廣的 256-bit 曲線。</summary>

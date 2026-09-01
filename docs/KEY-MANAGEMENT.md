@@ -1,13 +1,12 @@
-# Key management
+# Key management（金鑰管理）
 
-This guide describes the files and operational steps around CryptoLib key
-sets. It intentionally contains placeholders only; never place real private
-keys, AES material, PEM bodies or decrypted secrets in this document, a commit,
-an issue, or a log.
+本指南說明 CryptoLib 金鑰組所使用的檔案與操作步驟。文件只包含佔位符；
+絕對不要把真正的私鑰、AES 材料、PEM 內容或解密後的秘密放入本文件、
+提交記錄、議題或記錄檔。
 
-## Directory layout
+## Directory layout（目錄配置）
 
-Configure one protected root for a runtime context:
+為一個執行階段執行脈絡設定一個受保護的根目錄：
 
 ```text
 <key-root>/
@@ -16,196 +15,165 @@ Configure one protected root for a runtime context:
     update/
 ```
 
-| Directory | Purpose | Runtime behavior |
+| 目錄 | 用途 | 執行階段行為 |
 | --- | --- | --- |
-| `current` | Complete key sets currently available for normal reads and new writes. | Searched first. |
-| `history` | Retained complete key sets needed to decrypt older ciphertext. | Searched after `current`. |
-| `update` | Staging area for a newly generated complete key set. | Processed only by an explicit update call. |
+| `current` | 目前可供一般讀取與新寫入使用的完整金鑰組。 | 優先查找。 |
+| `history` | 為解密舊密文而保留的完整金鑰組。 | `current` 查找不到時才查找。 |
+| `update` | 新產生完整金鑰組的暫存區。 | 只有明確呼叫更新時才處理。 |
 
-The runtime recognizes these complete layouts:
+執行階段辨識以下完整配置：
 
-| Layout | Files | Material format |
+| 配置 | 檔案 | 材料格式 |
 | --- | --- | --- |
-| v2 | `<name>.aes`, `<name>.pub`, `<name>.priv` | `.aes` contains RSA-wrapped AES key material; `.pub` and `.priv` contain PEM keys. |
-| legacy | `<name>.der`, `<name>.public.pem`, `<name>.private.pem` | `.der` historically uses RSA PKCS#1 v1.5 wrapping and dot-separated AES material; the PEM files are the corresponding public/private keys. |
+| v2 | `<name>.aes`、`<name>.pub`、`<name>.priv` | `.aes` 含 RSA 包裝的 AES 金鑰材料；`.pub` 與 `.priv` 含 PEM 金鑰。 |
+| legacy | `<name>.der`、`<name>.public.pem`、`<name>.private.pem` | `.der` 歷史上使用 RSA PKCS#1 v1.5 包裝與句點分隔的 AES 材料；PEM 檔案是相應的公開／私密金鑰。 |
 
-`unifiedName` is the shared `<name>` without an extension. It must contain only
-ASCII letters, numbers, `_` and `-`. Dots, path separators, whitespace and an
-empty name are not valid. A key root should be outside the source repository,
-web root and any directory writable by an untrusted user.
+`unifiedName` 是不含副檔名的共同 `<name>`。它只能包含 ASCII 英文字母、數字、
+`_` 與 `-`。句點、路徑分隔符號、空白與空名稱都無效。金鑰根目錄應位於
+原始碼儲存庫、Web 根目錄與任何不受信任使用者可寫入的目錄之外。
 
-The key-set generator currently stages the legacy-compatible filenames
-`<name>.der`, `<name>.public.pem` and `<name>.private.pem`, while writing the
-current OAEP and `Key:IV` material format. `KeyManagerService` keeps a
-transitional OAEP/colon fallback for those files. Do not infer the format only
-from the extension; preserve the documented reader behavior.
+目前金鑰組產生器會使用可相容舊版的檔名 `<name>.der`、
+`<name>.public.pem` 與 `<name>.private.pem` 暫存檔案，但內容使用目前的 OAEP
+與 `Key:IV` 格式。`KeyManagerService` 對這些檔案保留過渡用的 OAEP／冒號
+回退路徑。不要只根據副檔名推斷內容格式；請保留既有讀取器行為。
 
-## Key generation
+## Key generation（金鑰產生）
 
-Key generation belongs on a controlled offline host. The tool loads its
-`appsettings.json`, creates the configured output directories, and writes
-secret-bearing files. Replace the configuration's key directory with a
-protected deployment location; the following command uses only a sample name:
+金鑰產生應在受控的離線主機執行。工具會載入自己的 `appsettings.json`、建立
+設定的輸出目錄並寫入含秘密的檔案。請把設定中的金鑰目錄替換為受保護的部署
+位置；以下命令只使用 sample 名稱：
 
 ```powershell
 dotnet run --project .\B2B.CryptoLib.KeyGenTool -- KEYSET sample-20260902
 ```
 
-The tool accepts `AES`, `RSA`, `ECC` or `KEYSET` as the first argument and an
-optional filename/name as the second argument. A `KEYSET` operation generates
-an RSA pair, a 256-bit AES key and IV, wraps the AES material with RSA OAEP,
-and stages the three files in `update`.
+工具的第一個參數接受 `AES`、`RSA`、`ECC` 或 `KEYSET`，第二個參數可選檔名／名稱。
+`KEYSET` 操作會產生 RSA 金鑰對、256 位元 AES 金鑰與 IV，使用 RSA OAEP 包裝
+AES 材料，並把三個檔案暫存到 `update`。
 
-Keep the output directory protected during generation. Restrict access to the
-operators and deployment identity, avoid copying the output to a developer
-worktree, and remove any failed or abandoned temporary output through the
-approved secret-destruction process.
+產生期間請保護輸出目錄，只允許操作人員與部署身分存取；避免把輸出複製到
+開發者工作樹，並依核准的秘密銷毀流程處理失敗或放棄的暫存輸出。
 
-## KEYSET command
+## KEYSET command（KEYSET 命令）
 
-The command writes a complete staged group and prints paths in its result. A
-successful command is not the same as a runtime publication. Verify the three
-expected files exist under the configured `update` directory, check ownership
-and permissions, and transfer the group through the approved deployment
-channel.
+命令會寫入完整的暫存組，並在結果中列出路徑。命令成功不等於執行階段已發布。
+請確認設定的 `update` 目錄下存在預期的三個檔案，檢查擁有者與權限，再透過
+核准的部署通道傳送整組檔案。
 
-No real key material is needed in the runtime repository. Tests generate
-ephemeral keys under their own temporary directories.
+執行階段儲存庫不需要任何實際金鑰材料。測試會在自己的暫存目錄產生
+短生命週期的測試金鑰。
 
-## Update staging
+## Update staging（更新暫存）
 
-Treat `update` as an inbound staging area, not as a directory that requests
-are allowed to mutate. A group is identified by its layout and unified name.
-Incomplete groups are ignored and remain available for repair or retry.
+請把 `update` 視為輸入暫存區，而不是允許請求任意修改的目錄。金鑰組由其
+配置與統一名稱辨識。不完整的組合會被忽略，並保留以便修復或重試。
 
-The staging operation is separate from the runtime manager. Generating files
-does not make them active, and constructing `CryptoClient` does not consume
-them.
+暫存操作與執行階段管理器分離。產生檔案不會使金鑰變成啟用狀態，建構
+`CryptoClient` 也不會消費這些檔案。
 
-## Explicit publication
+## Explicit publication（明確發布）
 
-Publish only at an intentional deployment point:
+只在明確指定的部署時點發布：
 
 ```csharp
 await client.UpdateKeySetsAsync();
 ```
 
-or, when the service is managed directly:
+或直接管理服務時：
 
 ```csharp
 await keyManager.StartAsync();
 ```
 
-Publication scans `update`, requires all three files, atomically replaces each
-destination in `current`, and deletes the source files only after successful
-copying. The order is deliberate:
+發布會掃描 `update`、要求三個檔案全部存在，以原子取代逐一替換
+`current` 中的目的檔案，並且只在複製成功後刪除來源檔案。順序刻意固定為：
 
 ```text
-public key
-private key
-AES material LAST
+公開金鑰
+私鑰
+AES 材料最後
 ```
 
-The AES file is the discovery marker. Writing it last ensures a new group is
-not discoverable until its public and private PEM files are present. Temporary
-files and atomic replacement ensure a reader sees an old complete destination
-or a new complete destination for each file, rather than a partially written
-file. The per-instance gate prevents that instance from reading during its
-own update.
+AES 檔案是辨識標記。最後寫入可確保新金鑰組在公開與私鑰 PEM 都存在
+前不會被發現。暫存檔與原子取代可確保讀取者對每個檔案只會看到
+舊的完整內容或新的完整內容，而不是部分寫入的檔案。每個個體的閘門
+會防止該個體在自己的更新進行中讀取半成品。
 
-Do not call the update method on every request. It mutates the filesystem,
-consumes staged files and clears caches. Run it as an explicit startup,
-deployment or rotation step with suitable operational coordination.
+不要在每個請求上呼叫更新方法。它會修改檔案系統、消費暫存檔並清除快取。
+請把它安排成明確的啟動、部署或輪替步驟，並做好必要的作業協調。
 
-## Current/history lifecycle
+## Current/history lifecycle（Current／History 生命週期）
 
-`current` is the normal source for both new encryption and decryption. A
-unified name that is not complete in `current` can be resolved from a complete
-matching group in `history`, allowing old ciphertext to remain readable.
+`current` 是新加密與解密的一般來源。若某統一名稱在 `current` 中不完整，
+仍可從 `history` 中的相同完整組合解析，讓舊密文持續可讀。
 
-The manager does not automatically archive old `current` files into `history`.
-Before replacing or retiring a key set, the deployment process must preserve a
-complete historical copy, with the same layout and protected permissions, if
-historical decryption is required. Use versioned unified names for rotations
-when possible; a current group with the same name takes precedence over a
-history group with that name.
+管理器不會自動把舊的 `current` 檔案封存到 `history`。若歷史解密仍有需求，
+部署流程在替換或退役金鑰組前，必須保留完整的歷史組合、相同的配置與受保護的
+權限。輪替時應盡量使用版本化統一名稱；若相同名稱同時存在於兩處，
+`current` 組合優先於 `history` 組合。
 
-## Rotation
+## Rotation（輪替）
 
-A safe rotation sequence is:
+安全的輪替順序如下：
 
-1. Generate a new key set with a new, valid unified name on the offline host.
-2. Preserve the old complete key set in `history` if older data must remain
-   decryptable.
-3. Stage the new three-file group under `update`.
-4. Verify file ownership, permissions and filenames without printing secrets.
-5. Call `UpdateKeySetsAsync` once at the coordinated deployment point.
-6. Configure the new name as `ActiveUnifiedName` for new writes.
-7. Keep the old historical set until the retention and backup policy allows
-   retirement.
+1. 在離線主機產生具有新且有效統一名稱的金鑰組。
+2. 若舊資料仍須解密，將舊的完整金鑰組保留在 `history`。
+3. 將新的三檔金鑰組暫存到 `update`。
+4. 不輸出秘密內容，確認檔案擁有者、權限與檔名。
+5. 在已協調的部署時點呼叫一次 `UpdateKeySetsAsync`。
+6. 將新名稱設定為供新寫入使用的 `ActiveUnifiedName`。
+7. 直到保留與備份政策允許退役前，持續保留舊的歷史組合。
 
-Because GCM ciphertext carries its unified name in the outer suffix, decryption
-continues to select the historical key by that suffix. It does not use the
-new active name to decrypt old data.
+由於 GCM 密文在外層尾綴攜帶統一名稱，解密會依該尾綴繼續選取歷史金鑰。
+它不會使用新的啟用名稱解密舊資料。
 
-## Rollback / historical decrypt
+## Rollback / historical decrypt（回復／歷史解密）
 
-Rollback is a deployment operation, not an automatic behavior. Keep the old
-complete group and its backup before a rotation. If a newly staged group must
-be withdrawn, stop new writes or point the client at the prior active name,
-then coordinate restoration of the prior complete group. A successful update
-clears only the cache of the manager that performed it.
+回復是部署操作，不是自動行為。輪替前請保留舊的完整組合與備份。若必須
+撤回新暫存的組合，請停止新寫入，或將用戶端指向先前的啟用名稱，再協調
+還原原本的完整組合。成功更新只會清除執行更新之管理器的快取。
 
-Historical decrypt works only while the matching complete group and its private
-key remain available. Do not delete a historical private key merely because a
-new public key is active.
+只有在相符的完整組合與私鑰仍存在時，歷史解密才可運作。不要因為新的公開金鑰
+已啟用，就刪除歷史私鑰。
 
-## Cache invalidation
+## Cache invalidation（快取失效）
 
-Each `KeyManagerService` has an instance-local lazy RSA cache and AES cache.
-After at least one group publishes successfully, the manager clears both so
-the next lookup reads the replacement. A second client that shares the same
-root does not receive that invalidation. Coordinate the update across clients,
-restart them, or avoid same-root multi-client deployments.
+每個 `KeyManagerService` 都有個體專屬的延遲 RSA 快取與 AES 快取。
+至少一組金鑰成功發布後，管理器會清除兩個快取，使下一次查找讀取替換後的
+檔案。共用相同根目錄的第二個用戶端不會收到這個失效通知；請跨用戶端協調
+更新、重新啟動程序，或避免多個用戶端共用同一根目錄。
 
-There is no cross-process lock or distributed cache invalidation. File copies,
-permissions, deployment ordering and process coordination remain host
-responsibilities.
+不存在跨程序鎖或分散式快取失效機制。檔案複製、權限、部署順序與程序協調仍由
+宿主環境負責。
 
-## Backup requirement
+## Backup requirement（備份要求）
 
-Back up complete key sets, not only public keys. A backup needed for historical
-decryption must contain the matching AES material, RSA public PEM and RSA
-private PEM, preserve its layout and be encrypted and access-controlled by the
-organization's secret-management policy.
+請備份完整金鑰組，不要只備份公開金鑰。需要支援歷史解密的備份必須包含相符的
+AES 材料、RSA 公開 PEM 與 RSA 私密 PEM，保留原本配置，並依組織的秘密管理
+政策加密與控管存取。
 
-Test restore procedures on an isolated host. Record unified names and retention
-metadata separately from secret contents, and never put backup passphrases or
-private key bodies in source control.
+請在隔離主機測試還原流程。統一名稱與保留期限等中繼資料應和秘密內容分開
+記錄；絕對不要把備份密碼或私鑰內容放入原始碼控制。
 
-## Permissions requirement
+## Permissions requirement（權限要求）
 
-The key root, all three subdirectories and every key file should be writable or
-readable only by the identities that need that operation. In particular:
+金鑰根目錄、三個子目錄及每個金鑰檔案，都應只允許實際需要該操作的身分讀寫。
+特別需要注意：
 
-- runtime readers need read access to the required current/history files;
-- the deployment identity needs controlled write access to `update` and
-  `current`;
-- ordinary application request identities should not generate or publish keys;
-- directory and file permissions should prevent untrusted replacement or
-  symlink/path manipulation according to the host operating system policy.
+- 執行階段讀取者需要讀取必要的 `current`／`history` 檔案；
+- 部署身分需要受控地寫入 `update` 與 `current`；
+- 一般應用程式請求身分不應產生或發布金鑰；
+- 目錄與檔案權限應依作業系統政策阻止不受信任的替換或符號連結／路徑操作。
 
-The library validates names and path relationships, but it cannot replace OS
-permissions, secret storage, backup encryption or an audited key ceremony.
+函式庫會驗證名稱與路徑關係，但不能取代作業系統權限、秘密儲存、備份加密或
+經稽核的金鑰作業流程。
 
-## Private key protection
+## Private key protection（私鑰保護）
 
-PEM private keys and AES material are secrets at rest. Use an encrypted disk,
-an access-controlled secret store or the organization's equivalent protection;
-limit process and operator access; do not include contents in diagnostics;
-and rotate or revoke access according to the retention policy.
+PEM 私鑰與 AES 材料是靜態儲存的秘密。請使用加密磁碟、受權限控管的秘密
+儲存區或組織採用的等效保護；限制程序與操作人員的存取，不要在診斷資料中放入
+內容，並依保留政策輪替或撤銷存取權。
 
-Never commit key files, generated JSON containing key bytes, `.der`, `.pub`,
-`.priv`, `.public.pem` or `.private.pem` files. If a secret is accidentally
-committed, treat it as compromised and follow the incident and key-rotation
-process rather than merely deleting the file from a later commit.
+絕對不要提交金鑰檔案、含金鑰位元組的產生 JSON、`.der`、`.pub`、`.priv`、
+`.public.pem` 或 `.private.pem`。若秘密意外被提交，應視為已洩漏，依事故處理與
+金鑰輪替流程處置，而不是只在後續提交記錄中刪除檔案。

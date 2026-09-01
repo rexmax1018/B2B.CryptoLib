@@ -20,21 +20,21 @@ namespace B2B.CryptoLib.KeyGeneration.KeyGenerators
     /// </summary>
     /// <remarks>
     /// 曲線取自 <see cref="CryptoConfig.Current"/> 的 ECC 設定，目前支援 NIST P-256、
-    /// P-384、P-521 與 secp256k1。PEM 輸出與曲線 metadata 會一併序列化；私鑰輸出
-    /// 必須在離線受控環境保護，不應進入 runtime log 或版本控制。
+    /// P-384、P-521 與 secp256k1。PEM 輸出與曲線中繼資料會一併序列化；私鑰輸出
+    /// 必須在離線受控環境保護，不應進入執行階段記錄或版本控制。
     /// </remarks>
     public class EccKeyGenerator : IKeyGenerator<EccKeyModel>
     {
-        /// <summary>依目前 ECC 曲線設定產生一組新的 key pair。</summary>
-        /// <returns>含 public/private PEM、曲線與 UTC 建立時間的 <see cref="EccKeyModel"/>。</returns>
+        /// <summary>依目前 ECC 曲線設定產生一組新的金鑰對。</summary>
+        /// <returns>含公開／私密 PEM、曲線與 UTC 建立時間的 <see cref="EccKeyModel"/>。</returns>
         /// <exception cref="InvalidOperationException"><see cref="CryptoConfig.Current"/> 尚未設定。</exception>
         /// <exception cref="NotSupportedException">底層 Bouncy Castle 不支援設定的曲線。</exception>
         public EccKeyModel GenerateKeyOnly()
         {
             var curve = CryptoConfig.Current.ECC.Curve;
             var curveName = curve == EccCurveType.Secp256k1 ? "secp256k1" : curve == EccCurveType.NistP384 ? "P-384" : curve == EccCurveType.NistP521 ? "P-521" : "P-256";
-            // Keep the configured curve and named parameters together; changing
-            // either alters signature interoperability and key serialization.
+            // 將設定的曲線與命名參數維持在一起；任一項變更都會影響簽章互通性
+            // 與金鑰序列化格式。
             var parameters = curve == EccCurveType.Secp256k1 ? SecNamedCurves.GetByName(curveName) : NistNamedCurves.GetByName(curveName);
             var domainParameters = new ECDomainParameters(parameters.Curve, parameters.G, parameters.N, parameters.H, parameters.GetSeed());
             var generator = new ECKeyPairGenerator();
@@ -46,12 +46,12 @@ namespace B2B.CryptoLib.KeyGeneration.KeyGenerators
             return new EccKeyModel { PrivateKey = WritePem(pair.Private), PublicKey = WritePem(pair.Public), Curve = curve, CreatedAt = DateTime.UtcNow };
         }
 
-        /// <summary>產生 ECC key pair 並以縮排 JSON 寫入 ECC 設定目錄。</summary>
+        /// <summary>產生 ECC 金鑰對並以縮排 JSON 寫入 ECC 設定目錄。</summary>
         /// <param name="filePath">可選檔名或路徑；實作只使用其檔名，省略時產生八碼隨機 <c>.json</c> 名稱。</param>
         /// <returns>描述輸出檔名與完整路徑的 <see cref="KeyGenerationResult"/>。</returns>
         /// <exception cref="InvalidOperationException"><see cref="CryptoConfig.Current"/> 尚未設定。</exception>
         /// <exception cref="IOException">輸出目錄或檔案無法建立或寫入。</exception>
-        /// <remarks>此方法不發布到 runtime 的 <c>current</c>；輸出含 private key，必須受控保存。</remarks>
+        /// <remarks>此方法不發布到執行階段的 <c>current</c>；輸出含私密金鑰，必須受控保存。</remarks>
         public KeyGenerationResult GenerateAndSaveKey(string? filePath = null)
         {
             var model = GenerateKeyOnly();
@@ -67,8 +67,8 @@ namespace B2B.CryptoLib.KeyGeneration.KeyGenerators
 
         private static string WritePem(object value)
         {
-            // Keep the established PEM writer so generated .public.pem and
-            // .private.pem files retain their existing labels and key layout.
+            // 保留既有的 PEM 寫入器，讓產生的 .public.pem 與 .private.pem 檔案
+            // 維持原本的標籤與金鑰配置。
             using (var writer = new StringWriter())
             {
                 new PemWriter(writer).WriteObject(value);

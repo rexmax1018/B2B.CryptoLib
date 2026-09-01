@@ -3,7 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>B2B.CryptoLib</RootNamespace>
     <AssemblyName>B2B.CryptoLib</AssemblyName>
-    <!-- 2.0.1 identifies the dependency-modernized package candidate. -->
+    <!-- 2.0.1 用來識別已完成相依套件現代化的套件候選版本。 -->
     <Version>2.0.1</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
@@ -12,7 +12,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
-  <!-- Keep production package references explicit per project; this goal does not introduce central package management. -->
+  <!-- 各專案明確列出正式環境套件參考；本目標不引入集中式套件管理。 -->
   <ItemGroup>
     <PackageReference Include="Autofac" Version="9.3.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />

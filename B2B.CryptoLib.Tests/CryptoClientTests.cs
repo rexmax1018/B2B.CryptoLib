@@ -245,7 +245,7 @@ namespace B2B.CryptoLib.Tests
                 ActiveUnifiedName = unifiedName
             });
 
-            // A normalized-equivalent configuration is idempotent.
+            // 正規化後相等的設定具備冪等性。
             Crypto.Initialize(new CryptoOptions
             {
                 KeyManagerBasePath = keyRoot + Path.DirectorySeparatorChar,
@@ -327,7 +327,7 @@ namespace B2B.CryptoLib.Tests
                 ActiveUnifiedName = unifiedName
             });
 
-            // Prime the second client's cache with the original key.
+            // 先以原始金鑰填入第二個用戶端的快取。
             Assert.Equal("before rotation", second.Decrypt(second.Encrypt("before rotation")));
 
             WriteV2KeySet(keyRoot, unifiedName, "update");

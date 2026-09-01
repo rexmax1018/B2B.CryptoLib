@@ -7,8 +7,8 @@ namespace B2B.CryptoLib.KeyGeneration.Models
     /// 表示一次離線金鑰產生與儲存作業的結果資訊。
     /// </summary>
     /// <remarks>
-    /// result 只描述輸出位置與 metadata，不包含金鑰 bytes。<see cref="KeyFilePath"/>
-    /// 可能指向含 private key 的檔案；不要直接將整個結果寫入公開 log 或回傳給不受信任的呼叫端。
+    /// 結果只描述輸出位置與中繼資料，不包含金鑰位元組。<see cref="KeyFilePath"/>
+    /// 可能指向含私密金鑰的檔案；不要直接將整個結果寫入公開記錄或回傳給不受信任的呼叫端。
     /// </remarks>
     public class KeyGenerationResult
     {
@@ -25,8 +25,8 @@ namespace B2B.CryptoLib.KeyGeneration.Models
         /// <param name="algorithm">產生的演算法。</param>
         /// <param name="fileName">輸出檔名。</param>
         /// <param name="fullPath">輸出的完整路徑。</param>
-        /// <returns>包含輸入 metadata 與目前 UTC 時間的新結果。</returns>
-        /// <remarks>此 helper 只記錄傳入的 metadata；它不會額外驗證檔名或路徑。</remarks>
+        /// <returns>包含輸入中繼資料與目前 UTC 時間的新結果。</returns>
+        /// <remarks>此輔助方法只記錄傳入的中繼資料；它不會額外驗證檔名或路徑。</remarks>
         public static KeyGenerationResult Create(CryptoAlgorithmType algorithm, string fileName, string fullPath)
         {
             return new KeyGenerationResult

@@ -4,9 +4,9 @@
     /// 非對稱式加密介面。
     /// </summary>
     /// <remarks>
-    /// 實作由呼叫端設定 key 後執行 byte-array 加解密。CryptoLib 的高階
-    /// <see cref="ICryptoService"/> RSA 路徑使用 OAEP；legacy key-set 的 PKCS#1 v1.5
-    /// material 不應透過此介面假設為可互換格式。
+    /// 實作由呼叫端設定金鑰後執行位元組陣列加解密。CryptoLib 的高階
+    /// <see cref="ICryptoService"/> RSA 路徑使用 OAEP；舊版金鑰組的 PKCS#1 v1.5
+    /// 材料不應透過此介面假設為可互換格式。
     /// </remarks>
     public interface IAsymmetricEncryptor : IEncryptor
     {

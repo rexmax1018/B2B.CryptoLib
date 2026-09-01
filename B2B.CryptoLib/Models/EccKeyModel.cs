@@ -8,7 +8,7 @@ namespace B2B.CryptoLib.Models
     /// </summary>
     /// <remarks>
     /// <see cref="PublicKey"/> 與 <see cref="PrivateKey"/> 是 PEM 文字，不是檔案路徑。
-    /// 私鑰含敏感資料，模型只應留在受保護的程序記憶體中，且不應寫入 log。
+    /// 私鑰含敏感資料，模型只應留在受保護的程序記憶體中，且不應寫入記錄。
     /// </remarks>
     public class EccKeyModel
     {
@@ -18,7 +18,7 @@ namespace B2B.CryptoLib.Models
         /// <summary>可供簽章使用的 PEM 私鑰內容。</summary>
         public string PrivateKey { get; set; } = string.Empty;
 
-        /// <summary>產生此 key pair 時使用的 <see cref="EccCurveType"/>。</summary>
+        /// <summary>產生此金鑰對時使用的 <see cref="EccCurveType"/>。</summary>
         public EccCurveType Curve
         {
             get; set;

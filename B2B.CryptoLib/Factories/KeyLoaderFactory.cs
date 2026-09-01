@@ -11,16 +11,16 @@ namespace B2B.CryptoLib.Factories
     /// </summary>
     /// <remarks>
     /// 工廠不會從輸入內容推斷演算法；呼叫端必須同時提供正確的
-    /// <see cref="CryptoAlgorithmType"/> 與 model generic type，避免把不同格式的
-    /// 金鑰資料誤交給錯誤的 loader。
+    /// <see cref="CryptoAlgorithmType"/> 與模型泛型類型，避免把不同格式的
+    /// 金鑰資料誤交給錯誤的載入器。
     /// </remarks>
     public class KeyLoaderFactory : IKeyLoaderFactory
     {
-        /// <summary>建立與指定演算法及 model 類型相容的 key loader。</summary>
-        /// <typeparam name="TModel">要載入的 model 類型。</typeparam>
+        /// <summary>建立與指定演算法及模型類型相容的金鑰載入器。</summary>
+        /// <typeparam name="TModel">要載入的模型類型。</typeparam>
         /// <param name="algorithm">金鑰資料的演算法類型。</param>
-        /// <returns>可載入 <typeparamref name="TModel"/> 的 loader。</returns>
-        /// <exception cref="System.NotSupportedException">演算法與 model 不匹配，或尚未有對應 loader。</exception>
+        /// <returns>可載入 <typeparamref name="TModel"/> 的載入器。</returns>
+        /// <exception cref="System.NotSupportedException">演算法與模型不匹配，或尚未有對應載入器。</exception>
         public IKeyLoader<TModel> Create<TModel>(CryptoAlgorithmType algorithm) where TModel : class
         {
             switch (algorithm)
