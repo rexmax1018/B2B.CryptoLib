@@ -9,6 +9,6 @@ namespace B2B.CryptoLib.KeyGeneration.Interfaces
     {
         TModel GenerateKeyOnly();
 
-        KeyGenerationResult GenerateAndSaveKey(string filePath = null);
+        KeyGenerationResult GenerateAndSaveKey(string? filePath = null);
     }
 }

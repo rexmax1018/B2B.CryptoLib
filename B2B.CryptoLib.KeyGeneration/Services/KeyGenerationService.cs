@@ -21,7 +21,7 @@ namespace B2B.CryptoLib.KeyGeneration.Services
             return _generatorFactory.Create<TModel>(algorithm).GenerateKeyOnly();
         }
 
-        public KeyGenerationResult GenerateAndSaveKey<TModel>(CryptoAlgorithmType algorithm, string filePath = null) where TModel : class
+        public KeyGenerationResult GenerateAndSaveKey<TModel>(CryptoAlgorithmType algorithm, string? filePath = null) where TModel : class
         {
             return _generatorFactory.Create<TModel>(algorithm).GenerateAndSaveKey(filePath);
         }

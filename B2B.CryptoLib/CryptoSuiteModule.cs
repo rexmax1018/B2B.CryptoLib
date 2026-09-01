@@ -11,10 +11,17 @@ namespace B2B.CryptoLib
     public class CryptoSuiteModule : Module
     {
         private readonly string _basePath;
+        private readonly string? _activeUnifiedName;
 
         public CryptoSuiteModule(string keyManagerBasePath)
+            : this(keyManagerBasePath, null)
+        {
+        }
+
+        public CryptoSuiteModule(string keyManagerBasePath, string? activeUnifiedName)
         {
             _basePath = keyManagerBasePath;
+            _activeUnifiedName = activeUnifiedName;
         }
 
         protected override void Load(ContainerBuilder builder)
@@ -27,7 +34,12 @@ namespace B2B.CryptoLib
 
             builder.RegisterType<KeyManagerService>().AsSelf().WithParameter("basePath", _basePath).SingleInstance();
 
-            builder.RegisterType<DataEncryptionService>().As<IDataEncryptionService>().SingleInstance();
+            builder.RegisterType<DataEncryptionService>().AsSelf().As<IDataEncryptionService>().SingleInstance();
+
+            builder.Register(c => new CryptoClient(c.Resolve<IDataEncryptionService>(), _activeUnifiedName))
+                .AsSelf()
+                .As<ICryptoClient>()
+                .SingleInstance();
         }
     }
 }

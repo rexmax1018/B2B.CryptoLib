@@ -24,7 +24,7 @@ namespace B2B.CryptoLib.Extensions
             return result;
         }
 
-        public static byte[] ToBytes(this string text, Encoding encoding = null) => (encoding ?? Encoding.UTF8).GetBytes(text);
+        public static byte[] ToBytes(this string text, Encoding? encoding = null) => (encoding ?? Encoding.UTF8).GetBytes(text);
 
         public static T FromJson<T>(this string json)
         {

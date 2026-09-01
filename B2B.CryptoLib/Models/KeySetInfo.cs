@@ -7,25 +7,13 @@ namespace B2B.CryptoLib.Models
     /// </summary>
     public class KeySetInfo
     {
-        public string UnifiedName
-        {
-            get; set;
-        }
+        public string UnifiedName { get; set; } = null!;
 
-        public string AesPath
-        {
-            get; set;
-        }
+        public string AesPath { get; set; } = null!;
 
-        public string RsaPublicKeyPath
-        {
-            get; set;
-        }
+        public string RsaPublicKeyPath { get; set; } = null!;
 
-        public string RsaPrivateKeyPath
-        {
-            get; set;
-        }
+        public string RsaPrivateKeyPath { get; set; } = null!;
 
         public DateTime CreationTime
         {

@@ -36,13 +36,13 @@ namespace B2B.CryptoLib.KeyGeneration.KeyGenerators
             };
         }
 
-        public KeyGenerationResult GenerateAndSaveKey(string filePath = null)
+        public KeyGenerationResult GenerateAndSaveKey(string? filePath = null)
         {
             var model = GenerateKeyOnly();
             var fileName = Path.GetFileName(filePath ?? CryptoConfig.GenerateKeyFileName(".json"));
             var path = CryptoConfig.GetKeyPath("RSA", fileName);
 
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
             File.WriteAllText(path, JsonConvert.SerializeObject(model, Formatting.Indented));
 

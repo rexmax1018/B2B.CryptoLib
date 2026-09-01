@@ -7,6 +7,6 @@ namespace B2B.CryptoLib.KeyGeneration.Interfaces
     /// </summary>
     public interface IKeySetGenerationService
     {
-        KeySetGenerationResult GenerateAndSave(string unifiedName = null);
+        KeySetGenerationResult GenerateAndSave(string? unifiedName = null);
     }
 }

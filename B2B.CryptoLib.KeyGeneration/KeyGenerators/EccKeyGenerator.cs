@@ -35,13 +35,13 @@ namespace B2B.CryptoLib.KeyGeneration.KeyGenerators
             return new EccKeyModel { PrivateKey = WritePem(pair.Private), PublicKey = WritePem(pair.Public), Curve = curve, CreatedAt = DateTime.UtcNow };
         }
 
-        public KeyGenerationResult GenerateAndSaveKey(string filePath = null)
+        public KeyGenerationResult GenerateAndSaveKey(string? filePath = null)
         {
             var model = GenerateKeyOnly();
             var fileName = Path.GetFileName(filePath ?? CryptoConfig.GenerateKeyFileName(".json"));
             var path = CryptoConfig.GetKeyPath("ECC", fileName);
 
-            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
 
             File.WriteAllText(path, JsonConvert.SerializeObject(model, Formatting.Indented));
 

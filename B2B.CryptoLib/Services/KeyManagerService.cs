@@ -163,7 +163,7 @@ namespace B2B.CryptoLib.Services
 
             var keySets = Directory.GetFiles(_updatePath)
                 .Select(TryParseKeySetFile)
-                .Where(file => file != null)
+                .OfType<KeySetFile>()
                 .GroupBy(file => file.Layout.Name + ":" + file.UnifiedName, StringComparer.OrdinalIgnoreCase);
 
             var updated = false;
@@ -209,22 +209,35 @@ namespace B2B.CryptoLib.Services
 
         private string DecryptLegacyMaterial(byte[] encrypted, RsaKeyModel rsa)
         {
+            Exception? legacyException = null;
+
             try
             {
-                return Encoding.UTF8.GetString(LegacyKeySetCrypto.Decrypt(encrypted, rsa));
+                var legacyMaterial = Encoding.UTF8.GetString(LegacyKeySetCrypto.Decrypt(encrypted, rsa));
+
+                if (IsEncodedMaterial(legacyMaterial, '.'))
+                    return legacyMaterial;
             }
-            catch (Exception legacyException)
+            catch (Exception ex)
             {
-                // 保留先前版本短暫產生的 .der/OAEP/冒號資料可讀性；真正舊版檔案一律在上方
-                // 以 PKCS#1 v1.5 與句點格式解析。
-                try
-                {
-                    return Encoding.UTF8.GetString(_cryptoService.Decrypt(encrypted, CryptoAlgorithmType.RSA, rsa));
-                }
-                catch (Exception)
-                {
-                    throw new InvalidDataException("無法解密舊版 AES 金鑰內容。", legacyException);
-                }
+                legacyException = ex;
+            }
+
+            // 保留先前版本短暫產生的 .der/OAEP/冒號資料可讀性；真正舊版檔案一律在上方
+            // 以 PKCS#1 v1.5 與句點格式解析。部分 RSA implementations 可能對不匹配的
+            // PKCS#1 block 回傳不可解析的 bytes 而不是拋例外，因此必須驗證材料再 fallback。
+            try
+            {
+                var transitionalMaterial = Encoding.UTF8.GetString(_cryptoService.Decrypt(encrypted, CryptoAlgorithmType.RSA, rsa));
+
+                if (IsEncodedMaterial(transitionalMaterial, ':'))
+                    return transitionalMaterial;
+
+                throw new InvalidDataException("AES 金鑰格式不正確");
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidDataException("無法解密舊版 AES 金鑰內容。", legacyException ?? ex);
             }
         }
 
@@ -239,6 +252,25 @@ namespace B2B.CryptoLib.Services
             return material.Split(':');
         }
 
+        private static bool IsEncodedMaterial(string material, char separator)
+        {
+            var parts = material.Split(separator);
+
+            if (parts.Length != 2 || parts.Any(string.IsNullOrWhiteSpace))
+                return false;
+
+            try
+            {
+                Convert.FromBase64String(parts[0]);
+                Convert.FromBase64String(parts[1]);
+                return true;
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+        }
+
         private static bool HasKeySet(string root, string unifiedName, KeySetLayout layout)
         {
             return File.Exists(Path.Combine(root, unifiedName + layout.AesExtension))
@@ -246,7 +278,7 @@ namespace B2B.CryptoLib.Services
                 && File.Exists(Path.Combine(root, unifiedName + layout.PrivateKeyExtension));
         }
 
-        private static KeySetFile TryParseKeySetFile(string path)
+        private static KeySetFile? TryParseKeySetFile(string path)
         {
             var fileName = Path.GetFileName(path);
 

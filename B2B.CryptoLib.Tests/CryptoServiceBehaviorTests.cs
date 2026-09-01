@@ -35,6 +35,22 @@ namespace B2B.CryptoLib.Tests
         }
 
         [Fact]
+        public void Aes_CbcCompatibility_DecryptsFixedKnownAnswerVector()
+        {
+            var service = new CryptoService();
+            var key = new SymmetricKeyModel
+            {
+                Key = Enumerable.Range(0, 32).Select(value => (byte)value).ToArray(),
+                IV = Enumerable.Range(32, 16).Select(value => (byte)value).ToArray()
+            };
+            var encrypted = Convert.FromBase64String("xUpVPlcYQoFJfECbqrp8LVlERDN4uSLKjgeAVSLfDyo=");
+
+            var plainText = service.Decrypt(encrypted, CryptoAlgorithmType.AES, key);
+
+            Assert.Equal("legacy CBC fixture", Encoding.UTF8.GetString(plainText));
+        }
+
+        [Fact]
         public void EncryptAndDecrypt_RejectNullInput()
         {
             var service = new CryptoService();

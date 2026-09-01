@@ -31,7 +31,7 @@ namespace B2B.CryptoLib.KeyGeneration.Services
         /// 產生一組使用舊版檔名、但採新版 OAEP 與 Key:IV 內容的檔案到 KeyDirectory/update。
         /// 未指定名稱時，使用 GenerateKeyFileName 產生的八碼字串作為共同前綴。
         /// </summary>
-        public KeySetGenerationResult GenerateAndSave(string unifiedName = null)
+        public KeySetGenerationResult GenerateAndSave(string? unifiedName = null)
         {
             var name = NormalizeUnifiedName(unifiedName);
             var rsa = _keyGenerationService.GenerateKeyOnly<RsaKeyModel>(CryptoAlgorithmType.RSA);
@@ -87,7 +87,7 @@ namespace B2B.CryptoLib.KeyGeneration.Services
             };
         }
 
-        private static string NormalizeUnifiedName(string unifiedName)
+        private static string NormalizeUnifiedName(string? unifiedName)
         {
             if (string.IsNullOrWhiteSpace(unifiedName))
                 return Path.GetFileNameWithoutExtension(CryptoConfig.GenerateKeyFileName());

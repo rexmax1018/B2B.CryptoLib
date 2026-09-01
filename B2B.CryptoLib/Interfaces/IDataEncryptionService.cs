@@ -5,12 +5,12 @@
     /// </summary>
     public interface IDataEncryptionService
     {
-        string Encrypt(string plainText, string unifiedName);
+        string? Encrypt(string? plainText, string? unifiedName);
 
-        string Decrypt(string encryptedDataWithUnifiedName);
+        string? Decrypt(string? encryptedDataWithUnifiedName);
 
-        string GetUnifiedNameFromEncryptedData(string encryptedDataWithUnifiedName);
+        string? GetUnifiedNameFromEncryptedData(string? encryptedDataWithUnifiedName);
 
-        bool IsValidEncryptedFormat(string data);
+        bool IsValidEncryptedFormat(string? data);
     }
 }
