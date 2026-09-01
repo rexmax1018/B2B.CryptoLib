@@ -1,13 +1,31 @@
 # B2B.CryptoLib
 
-B2B.CryptoLib is a .NET 10 library for AES, RSA and ECC operations and for
-runtime key-set based text encryption. The runtime library uses instance-based
-services internally; Autofac is optional.
+## Overview
 
-## Recommended: static facade
+B2B.CryptoLib 2.0.1 is a .NET 10-only library for AES, RSA and ECC operations
+and runtime key-set based text encryption. The high-level runtime API does not
+require dependency injection; Autofac is an optional integration path.
 
-Configure the process default client once with an explicit key-set root and
-active unified name:
+The runtime uses explicit key contexts. New text ciphertext is randomized by a
+fresh GCM nonce, while decryption selects its key from the ciphertext's
+`unifiedName` suffix. Key material must never be committed to this repository.
+
+## Installation
+
+Reference the package candidate from the intended feed:
+
+```xml
+<PackageReference Include="B2B.CryptoLib" Version="2.0.1" />
+```
+
+The package targets `net10.0` only. It declares the runtime dependencies
+`Autofac` 9.3.2, `BouncyCastle.Cryptography` 2.7.0 and `Newtonsoft.Json`
+13.0.4.
+
+## Quick Start
+
+Configure the process default client once with an explicit protected key-set
+root and active unified name:
 
 ```csharp
 using B2B.CryptoLib;
@@ -24,148 +42,151 @@ var plainText = Crypto.Decrypt(encrypted);
 ```
 
 `Crypto.Initialize` is thread-safe. Repeating it with the same normalized
-configuration is idempotent; attempting to replace the default key context
-with a different configuration throws an exception. Using the facade before
-initialization also fails fast. The facade never reads `appsettings.json`,
-creates a default `Keys` directory, or selects a key by sorting unified names.
-If the configured active key does not exist, encryption fails instead of
-silently selecting another key.
+configuration is idempotent; a different configuration is rejected. Using the
+facade before initialization fails fast. The facade does not read
+`appsettings.json`, create a default `Keys` directory, select the latest key by
+sorting names, or consume `update` files.
 
-`Crypto.Initialize` does not process the `update` directory. When an explicit
-key publication is intended, call `Crypto.UpdateKeySetsAsync()` after
-initialization.
-
-If `ActiveUnifiedName` is omitted, use the explicit overload instead:
+Key publication is explicit:
 
 ```csharp
-var encrypted = Crypto.Encrypt("test", "B2B_20260901");
+await Crypto.UpdateKeySetsAsync();
 ```
 
-## Isolated client
+## Isolated Client
 
-Use a client when an application needs more than one key root or key context:
+Use `CryptoClient` when a process needs more than one independent key root or
+key context:
 
 ```csharp
-var crypto = CryptoClient.Create(new CryptoOptions
+var client = CryptoClient.Create(new CryptoOptions
 {
     KeyManagerBasePath = @"D:\B2B\TenantA\Keys",
     ActiveUnifiedName = "tenant-a-key"
 });
 
-var encrypted = crypto.Encrypt("value");
-var plainText = crypto.Decrypt(encrypted);
+var encrypted = client.Encrypt("value");
+var plainText = client.Decrypt(encrypted);
 ```
 
-Each `CryptoClient` owns its `KeyManagerService`, cache, directory context and
-active unified name. Creating a client reads existing key sets from `current`
-and `history` using the existing precedence rules, but does not scan, publish,
-move or consume files in `update`. Call `crypto.UpdateKeySetsAsync()` when an
-explicit key publication is intended; this uses the existing
-`KeyManagerService.StartAsync()` semantics and invalidates that client's
-caches after a successful update.
+One client owns one key-manager, cache, directory context and optional active
+name. Construction creates `current`, `history` and `update`, but does not
+publish or consume staged files. If `ActiveUnifiedName` is omitted, use
+`client.Encrypt(value, unifiedName)`. Decrypt always uses the name in the
+ciphertext suffix. Separate clients sharing one root do not share cache state
+or an update lock; coordinate rotation externally or use one client per root.
 
-Multiple clients using the same `KeyManagerBasePath` are not guaranteed to
-share update or cache state. Treat same-root clients as unsupported when key
-rotation or updates can occur; use one client per root, or use distinct roots
-for isolated clients. The isolation guarantee applies to clients with
-different key roots.
+## Optional Autofac
 
-Available high-level operations include:
-
-```csharp
-crypto.Encrypt(value);
-crypto.Encrypt(value, unifiedName);
-crypto.Decrypt(encryptedValue);
-crypto.IsValidEncryptedFormat(encryptedValue);
-crypto.GetUnifiedName(encryptedValue);
-await crypto.UpdateKeySetsAsync();
-```
-
-`IsValidEncryptedFormat` checks only the outer Base64/envelope shape; it does
-not authenticate the payload or prove that the current key can decrypt it.
-
-## Optional Autofac integration
-
-Existing DI consumers can continue to use the module:
+Existing Autofac applications can register the runtime module:
 
 ```csharp
 using Autofac;
 using B2B.CryptoLib;
-using B2B.CryptoLib.Interfaces;
 
-var keyManagerBasePath = @"D:\B2B\Keys";
 var builder = new ContainerBuilder();
-builder.RegisterModule(new CryptoSuiteModule(keyManagerBasePath));
-
+builder.RegisterModule(new CryptoSuiteModule(@"D:\B2B\Keys", "B2B_20260901"));
 using var container = builder.Build();
-var dataEncryption = container.Resolve<IDataEncryptionService>();
 ```
 
-`CryptoSuiteModule(string keyManagerBasePath)` remains available, and the
-existing `IDataEncryptionService`, `ICryptoService`, `ICryptoKeyService`,
-key loaders and `KeyManagerService` registrations remain instance-oriented.
-The module also exposes `ICryptoClient`; pass a second `activeUnifiedName` to
-`CryptoSuiteModule` when that DI client should support `Encrypt(value)`.
-`ICryptoClient.UpdateKeySetsAsync()` is explicit; resolving the client does not
-consume `update` files. Applications that use the module do not need
-`ICryptoClient` in order to use the existing interfaces.
+`CryptoSuiteModule` registers the runtime services as singletons. It is
+optional; direct `CryptoClient` construction is supported. The separate
+`KeyGenerationModule` belongs to the offline key-generation tool and should
+not be registered in a web/runtime container.
 
-## Key and ciphertext compatibility
+## Key Generation
 
-This modernization does not redesign the cryptographic data contract:
+Key generation is an offline responsibility. The tool reads its copied
+`appsettings.json` through the legacy static `CryptoConfig` API and supports
+`AES`, `RSA`, `ECC` and `KEYSET` commands:
 
-- The outer encrypted value remains `Base64(payload).unifiedName`.
-- New high-level writes retain the existing GCM v2 payload (`B2BCGCM`, version
-  `2`, 12-byte nonce, UTF-8 unified-name AAD and 16-byte authentication tag).
-- Payloads without the GCM marker continue through the AES-CBC/PKCS#7 legacy
-  reader.
-- Both v2 key sets (`.aes`, `.pub`, `.priv`) and legacy key sets (`.der`,
-  `.public.pem`, `.private.pem`) remain supported.
-- RSA-OAEP and legacy RSA PKCS#1 v1.5 key-material paths remain separate.
-- `current`, `history` and `update` processing, cache invalidation and
-  unified-name extraction retain their existing behavior.
-
-`GetLatestActiveUnifiedName()` is still available for compatibility, but new
-convenience encryption uses only the explicitly configured
-`ActiveUnifiedName`.
-
-## Offline key generation
-
-Key generation remains a separate assembly and tool. It continues to use the
-legacy `CryptoConfig` APIs and the tool's copied `appsettings.json`; the
-runtime `CryptoClient` and `Crypto` facade do not depend on that global
-configuration state.
-
-```text
-dotnet run --project B2B.CryptoLib.KeyGenTool -- KEYSET B2B_20260901
+```powershell
+dotnet run --project .\B2B.CryptoLib.KeyGenTool -- KEYSET sample-20260902
 ```
 
-## Target framework and dependencies
+The output contains secret-bearing AES material and private PEM keys. Keep it
+in a protected offline location and transfer only through the approved key
+publication process.
 
-All production, tool and test projects target `net10.0` and use SDK-style
-projects with `PackageReference` and nullable reference types enabled. .NET
-Framework 4.8 is no longer supported. This dependency-modernized package
-candidate is `B2B.CryptoLib` version `2.0.1`.
+## Key Publication
 
-Production projects use the following direct dependencies:
+`KEYSET` output is staged under the configured key root's `update` directory.
+Only an explicit `Crypto.UpdateKeySetsAsync()` or
+`KeyManagerService.StartAsync()` processes it. A complete set is published as
+public key, private key, then AES material last; temporary files and atomic
+replacement protect readers from partial individual files. Successful update
+consumes the staged files and clears the updating client's key caches. Do not
+run this filesystem-mutating operation on every request.
+
+See [Key management](docs/KEY-MANAGEMENT.md) for rotation, history, rollback,
+backup and permission requirements.
+
+## Security / Query Semantics
+
+- New GCM ciphertext uses a random nonce, so encrypting the same plaintext can
+  produce different ciphertext. Do not use encrypted text equality as a
+  deterministic database lookup key.
+- The outer value is `Base64(payload).unifiedName`; the unified name is also
+  authenticated GCM AAD for new payloads.
+- `IsValidEncryptedFormat` checks only the outer shape. It does not prove
+  authentication, authorization, key existence or decryptability.
+- Store key roots outside the source tree, web root and publicly writable
+  directories. Never commit `.aes`, `.pub`, `.priv`, `.der`, `.public.pem`,
+  `.private.pem` or generated JSON containing key bytes.
+
+## Compatibility
+
+The package identity change does not change the public crypto contract,
+ciphertext envelope, GCM v2 payload, key layouts, RSA modes, ECC PEM/signature
+path or legacy decrypt behavior. Payloads without the GCM marker continue to
+use legacy AES-CBC/PKCS#7 reading.
+
+Read [CRYPTO-COMPATIBILITY.md](docs/CRYPTO-COMPATIBILITY.md) before changing
+cryptographic code, key serialization or dependency adapters.
+
+## Offline Packaging
+
+Build, test and pack the exact candidate using the repository's .NET 10
+Microsoft Testing Platform selection:
+
+```powershell
+dotnet restore B2B.CryptoLib.sln
+dotnet build B2B.CryptoLib.sln -c Release --no-restore
+dotnet test B2B.CryptoLib.sln -c Release --no-build
+dotnet pack .\B2B.CryptoLib\B2B.CryptoLib.csproj -c Release --no-build -o <offline-feed-directory>
+```
+
+Use a fresh package cache and only the intended offline source when verifying
+the transfer. See [OFFLINE-PACKAGING.md](docs/OFFLINE-PACKAGING.md) for the
+full procedure and SHA-256 integrity check.
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Key management](docs/KEY-MANAGEMENT.md)
+- [Cryptographic compatibility contract](docs/CRYPTO-COMPATIBILITY.md)
+- [Offline packaging](docs/OFFLINE-PACKAGING.md)
+- [Changelog](CHANGELOG.md)
+
+## Dependencies
+
+Runtime direct dependencies:
 
 - `Autofac` 9.3.2
-- `BouncyCastle.Cryptography` 2.7.0 (replacing the deprecated
-  `Portable.BouncyCastle` 1.9.0 package)
+- `BouncyCastle.Cryptography` 2.7.0, replacing `Portable.BouncyCastle` 1.9.0
 - `Newtonsoft.Json` 13.0.4
 
-The test project uses `xunit.v3` 4.0.0, `Microsoft.NET.Test.Sdk` 18.9.0 and
-`xunit.runner.visualstudio` 4.0.0. xUnit v3 requires the test project to be an
-executable; the `.NET 10` `dotnet test` integration uses the Microsoft Testing
-Platform runner selected in `global.json`. The VSTest SDK and Visual Studio
-adapter remain direct test-only dependencies for existing VSTest and Test
-Explorer workflows. Unused direct compatibility references and NLog were
-removed.
+The test project uses xUnit v3 4.0.0, `Microsoft.NET.Test.Sdk` 18.9.0 and
+`xunit.runner.visualstudio` 4.0.0. The production and KeyGeneration projects
+emit XML documentation files for IntelliSense and offline development.
 
-The Bouncy Castle package identity changed without changing CryptoLib's public
-crypto contract, ciphertext formats, key layouts or cryptographic semantics.
-The existing CBC, legacy RSA PKCS#1, RSA OAEP, ECC, GCM v2, key rotation and
-cache-invalidation regression coverage remains in place.
+## Versioning
 
-Integration with `B2B_API`, EF Core, Oracle and B2B.Dao mapping is intentionally
-deferred to the separate `GOAL-B2B-API-CRYPTOLIB-INTEGRATION` goal.
+Version 2.0.1 is the dependency-modernized package candidate and remains
+.NET 10-only. See [CHANGELOG.md](CHANGELOG.md), especially
+[Upgrading from 2.0.0 to 2.0.1](CHANGELOG.md#upgrading-from-200-to-201), for
+the dependency migration and downstream notes.
+
+The downstream `B2B_API` update from `B2B.CryptoLib` 2.0.0 to 2.0.1 and from
+Autofac 9.1.0 to 9.3.2 is a separate follow-up. This CryptoLib-only change
+does not modify that repository.

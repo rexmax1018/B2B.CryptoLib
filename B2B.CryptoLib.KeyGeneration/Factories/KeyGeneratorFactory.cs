@@ -9,8 +9,17 @@ namespace B2B.CryptoLib.KeyGeneration.Factories
     /// <summary>
     /// 依演算法類型與金鑰模型建立離線金鑰產生器。
     /// </summary>
+    /// <remarks>
+    /// factory 只建立 AES、RSA、ECC 與其相應 model 的組合，不會從呼叫資料猜測
+    /// 演算法。產生器應只在離線工具或受控的 key ceremony 環境使用。
+    /// </remarks>
     public class KeyGeneratorFactory : IKeyGeneratorFactory
     {
+        /// <summary>建立指定演算法及 model 的離線 generator。</summary>
+        /// <typeparam name="TModel">要產生的 model 類型。</typeparam>
+        /// <param name="algorithm">要產生的演算法。</param>
+        /// <returns>與 <paramref name="algorithm"/> 和 <typeparamref name="TModel"/> 相容的 generator。</returns>
+        /// <exception cref="NotSupportedException">演算法與 model 不匹配或尚未支援。</exception>
         public IKeyGenerator<TModel> Create<TModel>(CryptoAlgorithmType algorithm) where TModel : class
         {
             switch (algorithm)
