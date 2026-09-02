@@ -9,8 +9,9 @@
     <ImplicitUsings>disable</ImplicitUsings>
   </PropertyGroup>
 
+  <!-- 離線金鑰產生工具使用與程式庫模組相同的 Autofac 主版本。 -->
   <ItemGroup>
-    <PackageReference Include="Autofac" Version="6.0.0" />
+    <PackageReference Include="Autofac" Version="9.3.2" />
   </ItemGroup>
 
   <ItemGroup>

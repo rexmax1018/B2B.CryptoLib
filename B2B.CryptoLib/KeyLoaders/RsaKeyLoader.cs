@@ -10,12 +10,30 @@ namespace B2B.CryptoLib.KeyLoaders
     /// <summary>
     /// RSA 金鑰載入器，將 JSON 格式金鑰資料還原為 RSA 模型。
     /// </summary>
+    /// <remarks>
+    /// 載入器只還原 PEM 文字與中繼資料，不會驗證 PEM 是否與另一個金鑰組配對，
+    /// 也不會將私鑰加密或清除。RSA/OAEP 與舊版 PKCS#1 v1.5 的用途由上層服務選擇。
+    /// </remarks>
     public class RsaKeyLoader : IKeyLoader<RsaKeyModel>
     {
+    /// <summary>從 UTF-8 JSON 檔案載入 RSA 模型。</summary>
+        /// <param name="path">JSON 檔案路徑。</param>
+        /// <returns>反序列化後的 <see cref="RsaKeyModel"/>。</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="path"/> 為 null。</exception>
+        /// <exception cref="FileNotFoundException">檔案不存在。</exception>
+    /// <exception cref="InvalidDataException">JSON 無法轉為 RSA 模型。</exception>
         public RsaKeyModel LoadFromFile(string path) => Deserialize(File.ReadAllText(path));
 
+    /// <summary>從 UTF-8 JSON 文字載入 RSA 模型。</summary>
+        /// <param name="content">要解析的 JSON 文字。</param>
+        /// <returns>反序列化後的 <see cref="RsaKeyModel"/>。</returns>
+        /// <exception cref="InvalidDataException">內容無法解析或結果為 null。</exception>
         public RsaKeyModel LoadFromString(string content) => Deserialize(content);
 
+    /// <summary>從包含 UTF-8 JSON 的標準 Base64 字串載入 RSA 模型。</summary>
+        /// <param name="base64">要解碼的 Base64 字串。</param>
+        /// <returns>反序列化後的 <see cref="RsaKeyModel"/>。</returns>
+        /// <exception cref="InvalidDataException">Base64 或解碼後 JSON 無效。</exception>
         public RsaKeyModel LoadFromBase64(string base64)
         {
             try
@@ -28,12 +46,20 @@ namespace B2B.CryptoLib.KeyLoaders
             }
         }
 
+    /// <summary>讀取資料流剩餘內容並載入 RSA 模型。</summary>
+    /// <param name="stream">可讀的 UTF-8 JSON 資料流。</param>
+        /// <returns>反序列化後的 <see cref="RsaKeyModel"/>。</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="stream"/> 為 null。</exception>
+        /// <exception cref="InvalidDataException">內容無法解析。</exception>
+    /// <remarks>方法會讀到資料流結尾並關閉傳入資料流。</remarks>
         public RsaKeyModel LoadFromStream(Stream stream)
         {
             using (var reader = new StreamReader(stream, Encoding.UTF8))
                 return Deserialize(reader.ReadToEnd());
         }
 
+        // 完整保留已保存的 PEM 文字；後續依演算法進行的金鑰解析與驗證
+        // 由 CryptoService 負責。
         private static RsaKeyModel Deserialize(string json) => JsonConvert.DeserializeObject<RsaKeyModel>(json) ?? throw new InvalidDataException("無法解析 RSA 金鑰資料");
     }
 }

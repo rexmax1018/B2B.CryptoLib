@@ -398,7 +398,7 @@ namespace B2B.CryptoLib.Tests
             var legacyKeyGcmCipher = writer.Encrypt(legacyKeyGcmPlainText, legacyUnifiedName)!;
             var newKeyGcmCipher = writer.Encrypt(newKeyGcmPlainText, newUnifiedName)!;
 
-            // 使用新的服務執行個體，確保資料會從 current/history 重新載入而非沿用 writer 快取。
+            // 使用新的服務執行個體，確保資料會從 current/history 重新載入而非沿用寫入端快取。
             var reader = new DataEncryptionService(cryptoService, new KeyManagerService(keySetRoot, cryptoService));
 
             Assert.Equal(legacyCbcPlainText, reader.Decrypt(legacyCbcCipher));
